@@ -1,0 +1,98 @@
+@startuml 08-ui-driver-expect-actual
+' UI testing architecture: one commonTest suite, three UiDriver actuals.
+' Swing actual is the pinning oracle during migration; Compose actuals
+' must match the Swing ARGB hashes on every test run.
+
+skinparam defaultFontName "JetBrains Mono"
+skinparam shadowing false
+hide empty members
+
+package "modules/ui-shared :: commonTest" as ct {
+  interface UiDriver <<expect>> {
+    + loadFont(source: ByteSource)
+    + selectGlyph(codepoints: List<Int>)
+    + setText(text: String)
+    + renderPreview(size: IntSize): ARGB8Bitmap
+    + rasterGlyph(): ARGB8Bitmap
+    + vectorGlyph(): String
+    + clickById(id: String)
+    + readById(id: String): String
+    + dispose()
+  }
+
+  class RenderGlyphParityTest {
+    + hello_glyph_render_matches_committed_hash()
+    + zwj_emoji_family_resolves_single_glyph()
+    + fi_ligature_resolves_single_glyph()
+    + colr_v1_paint_layers_all_present()
+    + bitmap_vectorize_matches_committed_svg()
+  }
+  class ConfigRoundTripParityTest
+  class SpriteFontGeometryParityTest
+  class FigletSmushParityTest
+
+  UiDriver <.. RenderGlyphParityTest
+  UiDriver <.. ConfigRoundTripParityTest
+  UiDriver <.. SpriteFontGeometryParityTest
+  UiDriver <.. FigletSmushParityTest
+}
+
+package "modules/ui-swing :: jvmTest\n(BLUE = legacy oracle)" as swing {
+  class SwingUiDriver <<actual>> {
+    + loadFont(...) via Java2D
+    + renderPreview(...) via BufferedImage
+    + clickById(...) via AssertJ-Swing
+  }
+}
+
+package "modules/ui-compose-desktop :: jvmTest\n(GREEN = new)" as desktop {
+  class ComposeDesktopUiDriver <<actual>> {
+    + loadFont(...) via Compose Runtime
+    + renderPreview(...) via Skiko Surface
+    + clickById(...) via runComposeUiTest
+  }
+}
+
+package "modules/ui-compose-html :: wasmJsTest\n(GREEN = new)" as web {
+  class ComposeWebUiDriver <<actual>> {
+    + loadFont(...) via Compose HTML test-renderer
+    + renderPreview(...) via Skiko-wasm + Playwright ARGB grab (nightly)
+    + clickById(...) via DOM test-renderer
+  }
+}
+
+database "testdata/snapshots/\n<renderer>/*.argb.sha256\n*.svg" as Snap
+
+SwingUiDriver .up.|> UiDriver
+ComposeDesktopUiDriver .up.|> UiDriver
+ComposeWebUiDriver .up.|> UiDriver
+
+RenderGlyphParityTest --> Snap : reads expected hash
+SwingUiDriver --> Snap : writes (Phase B only, at freeze)
+ComposeDesktopUiDriver --> Snap : reads (Phase E+)
+ComposeWebUiDriver --> Snap : reads (Phase E.2+)
+
+note right of Snap
+  One hash per (test, renderer).
+  At freeze (legacy-v1):
+   • Swing hashes are captured
+     and committed — these become
+     the target for every future
+     renderer.
+  On every PR (Phase E+):
+   • All renderers run the same
+     commonTest suite; any hash
+     mismatch fails CI.
+end note
+
+note bottom of swing
+  Swing actual is RETAINED through
+  Phase E so Compose Desktop can
+  be diffed against it in the same
+  JVM and the same test fixture.
+  Deleted at Phase F when every
+  parity test has passed for N
+  consecutive tagged releases.
+end note
+
+@enduml

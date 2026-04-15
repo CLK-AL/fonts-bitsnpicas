@@ -46,6 +46,30 @@ Two CI/CD profiles (`java`, `kmp`) run on every PR throughout.
 
 ---
 
+## 0.5 Roadmap stages (delivery checkpoints)
+
+Each stage is a tagged milestone; CI profiles must be green for a tag
+to land. The UI testing progression is woven into the stages rather
+than kept as a separate schedule — every stage advances both the
+logic port and the UI parity oracle.
+
+| # | Stage | What lands | UI testing state |
+| --- | --- | --- | --- |
+| S0 | **Baseline** (✅ complete) | `CODE_REVIEW.md`, `TEST_REVIEW.md`, `MIGRATION_PLAN.md`, `INTEGRATION.md`, PUML diagrams, `.sdkmanrc` 25.0.2-graal + 2.3.20 + 9.4.1 + 0.138.0, `gradle/libs.versions.toml` verified-stable, Gradle build alongside any existing Maven/Ant. | — |
+| S1 | **Red-then-green Critical fixes** (✅ complete) | Per `CODE_REVIEW.md` Critical finding: Kotlin red test + Java fix commit pair; CI profile=java green. | `UiDriver` **expect** scaffolded in `modules/ui-shared/commonTest`. No actuals yet. |
+| S2 | **Phase B coverage drive** (**next**) | JaCoCo 100 % line + branch on the Option-C in-migration packages (see §5). Remaining Majors / Minors from `CODE_REVIEW.md` closed. | **Swing `actual` lands**: drives `UiDriver` via `BufferedImage` + `Graphics2D` + AssertJ-Swing. Expected ARGB hashes captured and committed under `testdata/snapshots/swing/**`. Swing becomes the **pinning oracle**. |
+| S3 | **Freeze** — tag `legacy-v1` | CODEOWNERS read-only on `main/java/BitsNPicas/src/**`; CI diff-check guard. | Swing `actual` hashes frozen. Any future PR that renames or re-renders a glyph must explicitly bump the snapshot. |
+| S4 | **Phase D** — port logic to `commonMain` | One subsystem per PR: `commonMain` Kotlin + `KotlinFontIo` actual. Same Kotlin tests run twice (frozen Java + Kotlin), byte-exact differential parity on `testdata/`. Kover 100 % + Pitest ≥ 85 % per ported module. | Swing `actual` still the only UI. `UiDriver`-driven tests keep passing against the Swing renderer regardless of the logic swap underneath. |
+| S5 | **Phase E.1** — Compose Desktop UI | `ui-compose-desktop` host + Compose composables in `ui-shared`. `ComposeDesktopUiDriver` `actual` lands. | **Green renderer joins the matrix.** Every `UiDriver` test runs under both Swing (blue) and Compose Desktop (green) ARGB-hash-equal; divergence fails CI. Same fixtures, same expected hashes. |
+| S6 | **Phase E.2** — Compose for Web (wasmJs) | `ui-compose-html` host. `ComposeWebUiDriver` `actual` lands (Compose test-renderer + Playwright Kotlin nightly ARGB grab). | Web joins the matrix. Three renderers, one suite, one set of hashes. |
+| S7 | **Phase F** — Dual CI/CD release | `profile=java` publishes ProGuarded `*-legacy` JAR. `profile=kmp` publishes core klibs (JVM/JS/wasmJs/Native), Compose Desktop signed bundle (native-image via `org.graalvm.buildtools.native` 0.10.6), Compose Web static site. `verifyProguardedJar` gates both. | Swing `actual` retained through S7 for cross-check. Deleted only after N consecutive tagged releases pass the full parity matrix. |
+
+UI migration in plain terms: **Swing stays as the test oracle
+through every stage from S2 onward; Compose implementations prove
+themselves against it on every PR.** No flag-day cut-over.
+
+---
+
 ## 1. Toolchain — SDKMAN + Gradle version catalog
 
 The previous iteration of this section used older placeholders
@@ -179,11 +203,70 @@ graalvm-native       = { id = "org.graalvm.buildtools.native", version.ref = "gr
 
 ### 1.3 JBang
 
-JBang (from `.sdkmanrc`) runs single-file Kotlin/Java scripts in
-`testdata/gen/*.java` and `*.kt` that generate malformed corpus
-fixtures — the fuzz seed corpus, the "bad PSF", etc. Everyone runs
-them with exactly one command and zero project setup:
-`jbang testdata/gen/BadPsf.kt`.
+JBang (from `.sdkmanrc`) is the runtime for **every CLI** in the
+project, including single-command CLIs. Two uses:
+
+1. **Corpus generators** — scripts under `testdata/gen/*.kt` build
+   malformed fixtures (bad PSF, short FLF header, oversized
+   `numGlyphs`, …). One command, zero project setup:
+   `jbang testdata/gen/BadPsf.kt`.
+
+2. **CLI entry points** — `modules/cli/**` and every tool that used
+   to be a `public static void main` Java class (the three
+   `*Test.java` harnesses; the font-conversion utilities) migrate
+   to **JBang scripts written in Kotlin using Clikt**, with
+   `//DEPS` and `//SOURCES` (`//src`) directives for modular
+   multi-file organisation:
+
+   ```kotlin
+   ///usr/bin/env jbang "$0" "$@" ; exit $?
+   //KOTLIN 2.3.20
+   //DEPS com.github.ajalt.clikt:clikt:5.0.1
+   //DEPS io.github.thisrepo:fonts-bitsnpicas-core:<version>
+   //SOURCES cli/PsfImportCommand.kt
+   //SOURCES cli/BdfExportCommand.kt
+   //SOURCES cli/VectorizeCommand.kt
+
+   import com.github.ajalt.clikt.core.*
+   class Fbp : CliktCommand(name = "fbp") { … }
+   fun main(args: Array<String>) = Fbp()
+       .subcommands(PsfImport(), BdfExport(), Vectorize())
+       .main(args)
+   ```
+
+   Every CLI — no matter how small — lives as a JBang script that
+   runs **without any Gradle build** from a fresh clone (only
+   SDKMAN + JBang are required). The same sources are also
+   aggregated into the Gradle `modules/cli` module for publishing
+   ProGuard-shrunk fat JARs and GraalVM `native-image` binaries in
+   Stage S7. `//SOURCES` is JBang's multi-file include directive
+   (canonically `//SOURCES path/to/file.kt`, shorthand `//src`
+   accepted by JBang 0.120+).
+
+   **Research-verified on this branch** with JBang 0.138.0 +
+   Kotlin 2.3.20 + GraalVM 25.0.2 + Clikt 4.4.0:
+
+   | Capability | Status | Notes |
+   | --- | --- | --- |
+   | `//KOTLIN <ver>` header | ✓ | JBang installs matching Kotlin compiler |
+   | `//DEPS g:a:v` | ✓ | resolves from Maven Central / configured repos |
+   | `//SOURCES file.kt` (local) | ✓ | tested |
+   | `//SOURCES https://…` (URL) | ✓ | JBang downloads + caches the file |
+   | `//FILES`, `//JAVAAGENT`, `//MANIFEST`, `//NATIVE_OPTIONS` | ✓ | standard directives |
+   | Clikt 5.x | ⚠ | requires Gradle Metadata; use `clikt-jvm` classifier + `.parse(args)`. Prefer **Clikt 4.4.0** for JBang scripts (`.main(args)`, plain POM). |
+   | `jbang build --native` / `jbang export native` | ✓ | invokes GraalVM `native-image`; reflection-heavy deps need `-N --initialize-at-run-time=...`. Example: Clikt+Mordant currently requires `-N '--initialize-at-run-time=com.github.ajalt.mordant.internal.nativeimage.NativeImagePosixMppImpls'`. |
+   | `--sources` CLI flag | ✓ | runtime override for `//SOURCES` |
+   | `jbang export gradle` / `export maven` | ✓ | generates project skeleton from script |
+
+   **Scope limit — JBang is JVM-only.** Kotlin/Native, Kotlin/JS,
+   and Kotlin/wasmJs artefacts for the KMP targets come from the
+   Gradle build in Stage S4+, **not** from JBang. JBang covers
+   three concrete use cases in this project:
+
+   1. Corpus generators (platform-agnostic — any JVM works).
+   2. JVM CLI entry points (runs on the SDKMAN-pinned GraalVM).
+   3. `export native` producing a `native-image` binary of the
+      JVM CLI for the `java` release channel.
 
 ---
 
@@ -223,13 +306,16 @@ fonts-bitsnpicas/
 | --- | --- | --- | --- |
 | Unit | `commonTest` / `jvmTest` | `kotlin.test` | java, kmp |
 | Integration | `jvmTest` | JUnit 5 | java, kmp |
-| UI (Desktop) | `ui-compose-desktop:jvmTest` | Compose UI test | kmp |
-| UI (Swing legacy) | `ui-swing:jvmTest` | AssertJ-Swing | java, kmp |
-| UI (Web) | `ui-compose-html:wasmJsTest` | Compose Web | kmp |
+| **UI (common, expect/actual)** | `modules/ui-shared/commonTest` | `kotlin.test` driving `UiDriver` (3 actuals — Swing oracle, Compose Desktop, Compose Web) | java (Swing actual only), kmp (all three) |
 | API / contract | `jvmTest`, `jsTest`, `nativeTest` | JUnit 5 / kotlin.test | kmp |
 | E2E | `:e2e-tests` | JUnit 5 + Gradle `runCli` | java, kmp |
 | Load / perf | `:benchmarks` | `kotlinx-benchmark` + JMH | java (JMH on Java CLI), kmp (KMP CLI) |
 | Fuzz | `jvmTest` | Jazzer | java, kmp (per-impl) |
+
+See [`docs/diagrams/08-ui-driver-expect-actual.puml`](docs/diagrams/08-ui-driver-expect-actual.puml)
+for the UI-test driver architecture — one `commonTest` suite,
+three `actual` bindings, ARGB-hash parity gate across every
+renderer.
 
 The same `@Test` methods execute under both profiles via a
 test-fixture `interface FontIo` with two `actual` implementations —
@@ -298,12 +384,63 @@ For each format `F`:
 
 ---
 
+## 4.6 UI parity tier (`UiDriver` expect/actual)
+
+A single suite under `modules/ui-shared/src/commonTest/kotlin/**`
+drives every rendering path through an `expect class UiDriver`.
+Three `actual` bindings:
+
+| Renderer | Role | Module / source set | Active from |
+| --- | --- | --- | --- |
+| Swing (Java2D) | **Blue — pinning oracle** | `ui-swing :: jvmTest` | Stage S2 |
+| Compose Desktop (Skiko) | **Green** | `ui-compose-desktop :: jvmTest` | Stage S5 |
+| Compose Web (Skiko-wasm) | **Green** | `ui-compose-html :: wasmJsTest` | Stage S6 |
+
+Contract:
+
+- At freeze (S3) the Swing actual produces the authoritative ARGB
+  hash for every `(test, fixture)` pair under
+  `testdata/snapshots/swing/**`. These are committed.
+- From S5 onward each new Compose actual must match the Swing
+  hashes on every CI run. A mismatch fails the build with
+  `(renderer, test, expectedHash, actualHash)`.
+- Snapshot bumps require an explicit commit titled
+  `ui-parity: accept <renderer> divergence for <test>` with a
+  justification comment — never a silent overwrite.
+
+Tests of interest covered by the driver:
+
+- `RenderGlyphParityTest` — bitmap / FIGlet / sprite / TTF glyphs
+  raster-rendered through `Glyph.rasterize`.
+- `VectorizeParityTest` — `Glyph.vectorize` SVG output, byte-exact
+  up to `VectorizeOptions.svgPrecision`.
+- `CodepointSequenceTest` — FI ligature, ZWJ emoji family,
+  combining diacritics.
+- `ConfigRoundTripParityTest` — save → load → save round-trip
+  (pins the `ConfigFont` setter family).
+- `SpriteFontGeometryParityTest` — variable-width glyph positions.
+- `FigletSmushParityTest` — horizontal + vertical smush rules.
+
+UI driver coverage note: UI modules (`ui-swing`, `ui-compose-*`)
+are **pinned by ARGB snapshot** through the driver, not line-
+covered. Line coverage on a Swing event listener buys nothing;
+the snapshot hash is the meaningful regression gate.
+
+---
+
 ## 5. 100 % coverage gates (both profiles)
 
-- **Profile `java`**: JaCoCo via the Gradle `jacoco` plugin, executed
-  against the frozen Java tree; `jacocoTestCoverageVerification` rule
-  `minimum = 1.0` on line + branch for `main/java/BitsNPicas/src/**`.
-  Enforced at the end of Phase B, required to enter Phase C.
+- **Profile `java`** (Option-C scope): JaCoCo via the Gradle
+  `jacoco` plugin, executed against the in-migration packages only —
+  `com.kreative.bitsnpicas` (core), `.importer.**`, `.exporter.**`,
+  `.truetype.**`, `.puaa.**`. `jacocoTestCoverageVerification` rule
+  `minimum = 1.0` on line + branch. Everything else under
+  `main/java/BitsNPicas/src/**` is compiled (for UI oracle hosting)
+  but JaCoCo-excluded. Enforced at the end of Stage S2, required to
+  enter Stage S3 (freeze).
+- **UI packages are pinned, not line-covered**, per §4.6. The Swing
+  `UiDriver` `actual` captures ARGB hashes at freeze; subsequent
+  renderers match those hashes.
 - **Profile `kmp`**: Kover 0.9.x (see `libs.versions.toml`) with
   `koverVerify { rule { bound { minValue = 100 } } }` on every
   `commonMain` module. Pitest mutation ≥ 85 %. Required before a

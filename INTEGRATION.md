@@ -15,6 +15,12 @@ after Phase C must implement these interfaces.
 - [`docs/diagrams/*.puml`](docs/diagrams/) — PlantUML sources for
   every diagram referenced below. Render with
   `jbang plantuml@plantuml/plantuml docs/diagrams/*.puml`.
+- Eight PUML sources in total: `01-core-api`, `02-format-implementations`,
+  `03-modules-and-hosts`, `04-vectorize-flow`,
+  `05-integration-phases`, `06-dual-cicd`,
+  `07-fix-then-freeze-then-port`, and
+  **`08-ui-driver-expect-actual`** (the UI-test architecture
+  covered in §4.6 below).
 
 ---
 
@@ -220,6 +226,54 @@ extends that API with three new capabilities needed by `vectorize`:
    (CBDT / sbix / sprite-emoji) are emitted as `<image>` elements
    by default; switch `embedPng=false` to re-trace.
 
+### 4.6 UI test architecture — `UiDriver` expect/actual
+
+Diagram source: [`docs/diagrams/08-ui-driver-expect-actual.puml`](docs/diagrams/08-ui-driver-expect-actual.puml).
+
+One common-code suite under `modules/ui-shared/commonTest/**`
+drives every renderer through an `expect class UiDriver`. Three
+`actual` bindings land at successive stages (see roadmap in
+`MIGRATION_PLAN.md` §0.5):
+
+- `SwingUiDriver` (blue, pinning oracle) — lands at **Stage S2**,
+  drives legacy `java.awt.Graphics2D` via off-screen
+  `BufferedImage`; AssertJ-Swing for interactions.
+- `ComposeDesktopUiDriver` (green) — lands at **Stage S5**, drives
+  Compose Desktop via `runComposeUiTest { onNodeWithTag(id)… }` +
+  off-screen Skiko `Surface`.
+- `ComposeWebUiDriver` (green) — lands at **Stage S6**, drives
+  Compose Web's wasmJs test-renderer for DOM assertions, with
+  nightly Playwright Kotlin runs grabbing real-browser ARGB.
+
+ARGB-hash parity gate: at freeze (S3) the Swing actual writes
+`testdata/snapshots/swing/<test>.argb.sha256`; every later
+renderer must match the same hash on every CI run. Snapshot
+bumps require an explicit commit
+(`ui-parity: accept <renderer> divergence for <test>`), never a
+silent overwrite.
+
+Tests driven through `UiDriver`:
+
+- `RenderGlyphParityTest` — per-format rasterisation
+- `VectorizeParityTest` — per-format SVG output (byte-exact up to
+  `VectorizeOptions.svgPrecision`)
+- `CodepointSequenceTest` — FI ligature, ZWJ emoji family,
+  combining diacritics
+- `ConfigRoundTripParityTest` — pins `ConfigFont` setter family
+- `SpriteFontGeometryParityTest` — variable-width glyph positions
+- `FigletSmushParityTest` — horizontal + vertical smush rules
+
+Why this shape instead of per-framework test suites:
+
+- **Write once, run three times.** No duplicate test authorship.
+- **Swing is a concrete oracle.** ARGB hashes captured at freeze
+  are authoritative; every later renderer diffs against them.
+- **Regressions bisect cleanly.**
+  `./gradlew :ui-compose-desktop:test --tests RenderGlyphParityTest`
+  pinpoints the framework that broke.
+- **Compose-for-iOS/Android** (if ever added) is a fourth
+  `actual` with zero new test code.
+
 ### 4.5 Shaping (`Shaper`) — ligatures + emoji clusters
 
 `Font.glyph(codepoints)` accepts `List<Int>`, but end-users pass
@@ -327,7 +381,15 @@ Diagram source: [`docs/diagrams/06-dual-cicd.puml`](docs/diagrams/06-dual-cicd.p
 7. The KMP UI on `{ubuntu, macos, windows}` × `{Swing-legacy,
    Compose-desktop, Compose-web (wasmJs)}` renders the same
    canned font gallery bit-exactly (ARGB hash per renderer, diffs
-   gated).
+   gated). All three renderers are driven through the single
+   `UiDriver` expect/actual common-test suite (§4.6).
+8. JBang CLI scripts (corpus generators + entry points)
+   runnable from a bare SDKMAN environment with no Gradle build;
+   Gradle `modules/cli` aggregates the same sources for
+   ProGuarded fat JARs and GraalVM `native-image` artefacts at
+   Stage S7. JBang is **JVM-only** — Kotlin/Native / JS / wasmJs
+   targets ship via Gradle, not JBang (verified capability matrix
+   in `MIGRATION_PLAN.md` §1.3).
 
 ---
 
