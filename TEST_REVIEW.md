@@ -154,3 +154,26 @@ Given the [code review](CODE_REVIEW.md) findings, the top test gaps are:
 The single most valuable next step is adding a real test framework and a
 small suite of negative-input tests around the binary importers — that
 converts the font parsers from "crash surface" to "validated API."
+
+---
+
+## Execution plan (KMP / Gradle / TDD / 100 % coverage)
+
+The concrete execution of this review lives in
+[`MIGRATION_PLAN.md`](MIGRATION_PLAN.md). In short:
+
+- Each level (unit, integration, UI, API, E2E, load, fuzz) is wired to
+  a Gradle KMP source set (§3 of the plan).
+- Every `CODE_REVIEW.md` finding becomes one named Kotlin test in
+  `commonTest` / `jvmTest`, authored **red** against a JVM delegate
+  over the legacy Java code (§4 of the plan).
+- The three existing `*Test.java` CLIs are promoted into
+  JUnit-parameterised tests under `jvmTest`, with exit-code
+  signalling and no shell-out to `diff`.
+- 100 % Kotlin line + branch coverage (Kover) and ≥ 85 % mutation
+  coverage (Pitest) are enforced per-format before it migrates from
+  `jvmMain` (Java-delegating) to pure `commonMain`.
+- Legacy Java under `main/java/BitsNPicas/src/**` stays frozen; the
+  `java-legacy` CI lane keeps building and running it, while the
+  `kmp` lane builds JVM / JS / Native targets and the Compose
+  Desktop / Compose HTML UIs.

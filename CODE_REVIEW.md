@@ -220,3 +220,18 @@ meaning of `getY()`.
 
 These account for every way a malformed input file can crash or stall the
 application and should be treated as release blockers.
+
+---
+
+## Remediation plan (KMP / Gradle / TDD)
+
+Every finding in this document is scheduled for a failing Kotlin test
+followed by a Kotlin (KMP) re-implementation in
+[`MIGRATION_PLAN.md`](MIGRATION_PLAN.md). The legacy Java code in
+`main/java/BitsNPicas/src/**` is **not** patched — it stays as a
+frozen reference implementation. Each Critical/Major/Minor finding
+above has a matching named test in §4 of the migration plan that must
+first fail against the legacy Java delegate and then pass against the
+new `commonMain` Kotlin implementation, with 100 % Kover coverage and
+byte-exact differential parity against the legacy binary as the merge
+gate.
