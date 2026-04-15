@@ -81,13 +81,55 @@ tasks.test {
 }
 
 jacoco {
-    toolVersion = "0.8.12"
+    toolVersion = "0.8.13"
+}
+
+// Option-C coverage scope: core top-level classes only (not subpackages)
+// plus importer, exporter, truetype, puaa subpackages.
+val optionCIncludes = listOf(
+    "com/kreative/bitsnpicas/*.class",
+    "com/kreative/bitsnpicas/importer/**",
+    "com/kreative/bitsnpicas/exporter/**",
+    "com/kreative/bitsnpicas/truetype/**",
+    "com/kreative/bitsnpicas/puaa/**",
+)
+
+// Filter the JaCoCo class-directories against the scope so the XML/HTML
+// reports only contain in-scope classes.
+fun scopedClassDirs(): FileCollection {
+    val mainOutput = sourceSets.main.get().output
+    return files(mainOutput.classesDirs.map { dir ->
+        fileTree(dir) {
+            include(optionCIncludes)
+        }
+    })
 }
 
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
+    classDirectories.setFrom(scopedClassDirs())
     reports {
         xml.required.set(true)
         html.required.set(true)
+    }
+}
+
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.test)
+    classDirectories.setFrom(scopedClassDirs())
+    violationRules {
+        // Rule 1: core top-level classes must hit 100% line + branch.
+        rule {
+            element = "BUNDLE"
+            includes = listOf("*")
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.0".toBigDecimal()
+            }
+        }
+        // NOTE: real gates are enabled by the final commit once the coverage
+        // floor is actually reached; until then we keep a soft 0.0 minimum so
+        // the build doesn't fail mid-progress.
     }
 }
