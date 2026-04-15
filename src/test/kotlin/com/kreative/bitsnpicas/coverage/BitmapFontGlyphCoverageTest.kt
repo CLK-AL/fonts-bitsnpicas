@@ -115,10 +115,17 @@ class BitmapFontGlyphCoverageTest {
 
     @Test
     fun drawRect_and_fillRect_and_invertRect_work() {
-        val g = BitmapFontGlyph(Array(6) { ByteArray(6) }, 0, 6, 6)
+        val g = BitmapFontGlyph(Array(6) { ByteArray(6) }, 0, 6, 0)
+        // In-bounds rectangle (ix1, ix2, iy1, iy2 all valid).
         g.drawRect(0, 0, 3, 3, 0xFF.toByte())
         g.fillRect(1, 1, 2, 2, 0xFF.toByte())
         g.invertRect(1, 1, 2, 2)
+        // ix2 out of range: large width so right edge is past row.length.
+        g.drawRect(0, 0, 10, 2, 0xFF.toByte())
+        // ix1 out of range: negative x1.
+        g.drawRect(-5, 0, 1, 2, 0xFF.toByte())
+        // iy out of range: huge y.
+        g.drawRect(0, -99, 1, 1, 0xFF.toByte())
         // Out-of-bounds coords — exercise the branches that fall through.
         g.drawRect(-100, -100, 200, 200, 0xFF.toByte())
         g.fillRect(-100, -100, 200, 200, 0xFF.toByte())
