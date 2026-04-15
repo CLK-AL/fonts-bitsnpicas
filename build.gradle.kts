@@ -144,12 +144,12 @@ tasks.jacocoTestCoverageVerification {
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
-                minimum = "0.87".toBigDecimal()
+                minimum = "0.88".toBigDecimal()
             }
             limit {
                 counter = "BRANCH"
                 value = "COVEREDRATIO"
-                minimum = "0.73".toBigDecimal()
+                minimum = "0.74".toBigDecimal()
             }
         }
         // TODO follow-up: split this into one PACKAGE rule per in-scope
