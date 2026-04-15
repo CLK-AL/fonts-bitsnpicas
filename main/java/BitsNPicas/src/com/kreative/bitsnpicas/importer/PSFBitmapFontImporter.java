@@ -88,6 +88,12 @@ public class PSFBitmapFontImporter implements BitmapFontImporter {
 		return new BitmapFont[]{f};
 	}
 	
+	// C3: sanity limits on untrusted PSF header fields.
+	private static final int MAX_NUM_GLYPHS = 0x200000; // 2,097,152 glyphs
+	private static final int MAX_HEADER_SIZE = 0x10000; // 64 KiB extra header
+	private static final int MAX_CHAR_SIZE = 0x100000;  // 1 MiB per glyph
+	private static final int MAX_DIMENSION = 0x1000;    // 4096 px
+
 	private BitmapFont importFontImpl(DataInputStream in) throws IOException {
 		int version    = readVersion(in);
 		int headerSize = (version < 2) ? 4                        : Integer.reverseBytes(in.readInt());
@@ -96,7 +102,20 @@ public class PSFBitmapFontImporter implements BitmapFontImporter {
 		int charSize   = (version < 2) ? in.readUnsignedByte()    : Integer.reverseBytes(in.readInt());
 		int height     = (version < 2) ? charSize                 : Integer.reverseBytes(in.readInt());
 		int width      = (version < 2) ? 8                        : Integer.reverseBytes(in.readInt());
-		
+
+		if (numGlyphs < 0 || numGlyphs > MAX_NUM_GLYPHS) {
+			throw new IOException("PSF numGlyphs out of range: " + numGlyphs);
+		}
+		if (headerSize < 0 || headerSize > MAX_HEADER_SIZE) {
+			throw new IOException("PSF headerSize out of range: " + headerSize);
+		}
+		if (charSize < 0 || charSize > MAX_CHAR_SIZE) {
+			throw new IOException("PSF charSize out of range: " + charSize);
+		}
+		if (height < 0 || height > MAX_DIMENSION || width < 0 || width > MAX_DIMENSION) {
+			throw new IOException("PSF glyph dimensions out of range: " + width + "x" + height);
+		}
+
 		if (version >= 2 && headerSize > 32) in.readFully(new byte[headerSize - 32]);
 		
 		// C1/C14: guard against headers whose declared geometry overruns the
