@@ -166,8 +166,15 @@ class PuaaCliTest {
         captureStdout {
             PuaaDecompiler.main(arrayOf("-I", outFont.absolutePath, "-O", dumpDir.absolutePath))
         }
+        // -- terminator: positional arg goes onto the inputFiles list (default).
+        // To avoid producing the default "puaa.d" dir in the test cwd, we
+        // also pass an explicit -o.
         captureStdout {
-            PuaaDecompiler.main(arrayOf("-i", outFont.absolutePath, "--", dumpDir.absolutePath))
+            PuaaDecompiler.main(arrayOf(
+                "-i", outFont.absolutePath,
+                "-o", dumpDir.absolutePath,
+                "--", outFont.absolutePath,
+            ))
         }
 
         // 5) Lookup - exercise list-properties, per-property, per-codepoint paths.

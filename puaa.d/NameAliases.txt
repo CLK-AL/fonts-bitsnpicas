@@ -1,2 +1,0 @@
-E000;PRIVATE USE ALPHA;alternate
-E001;PRIVATE USE BETA;abbreviation
