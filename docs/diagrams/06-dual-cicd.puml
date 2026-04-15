@@ -1,0 +1,50 @@
+@startuml 06-dual-cicd
+' Deployment / pipeline diagram: dual CI/CD profiles.
+
+skinparam defaultFontName "JetBrains Mono"
+skinparam shadowing false
+
+cloud "GitHub" {
+  [PR / tag] as PR
+}
+
+rectangle "CI Profile: java" {
+  [sdk env] as Jsdk
+  [gradle -Pprofile=java check\njacocoTestCoverageVerification] as Jbuild
+  [proguardRelease] as Jpg
+  [verifyProguardedJar] as Jvpg
+  [Maven Central\n*-legacy JAR] as Jpub
+  Jsdk --> Jbuild --> Jpg --> Jvpg --> Jpub
+}
+
+rectangle "CI Profile: kmp" {
+  [sdk env] as Ksdk
+  [gradle -Pprofile=kmp build\nkoverVerify pitest] as Kbuild
+  [proguardRelease] as Kpg
+  [verifyProguardedJar] as Kvpg
+  [packageReleaseDistribution] as Kpkg
+  [nativeCompile\n(GraalVM 25)] as Knat
+  [Maven Central klibs\nnpm (js, wasmJs)\nCompose Desktop bundles\nGitHub Pages (web)] as Kpub
+  Ksdk --> Kbuild --> Kpg --> Kvpg
+  Kvpg --> Kpkg
+  Kvpg --> Knat
+  Kpkg --> Kpub
+  Knat --> Kpub
+}
+
+PR --> Jsdk
+PR --> Ksdk
+
+note bottom of Jpub
+  mapping.txt uploaded as a
+  CI artefact + attached to
+  the GitHub release for
+  stack-trace deobfuscation.
+end note
+note bottom of Kpub
+  Kotlin/Native targets use
+  GraalVM-compatible LLVM
+  toolchain via SDKMAN env.
+end note
+
+@enduml

@@ -1,0 +1,57 @@
+@startuml 04-vectorize-flow
+' Sequence: Glyph.vectorize(SvgSink) dispatch across format flavours.
+
+skinparam defaultFontName "JetBrains Mono"
+skinparam shadowing false
+actor Caller
+participant Font
+participant Glyph
+participant "SvgSink\n(SkikoSvgSink default)" as Sink
+participant "BitmapTracer\n(square / Moore / potrace)" as Tracer
+
+== Monochrome bitmap glyph ==
+Caller -> Font: glyph([cp])
+Caller -> Glyph: vectorize(sink, opts)
+Glyph -> Sink: beginGlyph(w, h, viewBox)
+loop each lit pixel (opts.bitmapTracer = SQUARE)
+  Glyph -> Sink: path("M…Z", fill=Paint.Solid(black))
+end
+Glyph -> Sink: endGlyph()
+
+== Contour-traced bitmap (smoother SVG) ==
+Caller -> Glyph: vectorize(sink, opts.copy(tracer=MOORE_NEIGHBOUR))
+Glyph -> Tracer: trace(rawBitmap)
+Tracer --> Glyph: List<SvgPath>
+Glyph -> Sink: beginGlyph
+Glyph -> Sink: path(d, fill=Solid)
+Glyph -> Sink: endGlyph
+
+== TTF outline (glyf / CFF) ==
+Caller -> Glyph: vectorize(sink)
+Glyph -> Sink: beginGlyph
+Glyph -> Sink: path(fromGlyfContour, fill=Solid)
+Glyph -> Sink: endGlyph
+
+== COLRv1 colour outline ==
+Caller -> Glyph: vectorize(sink, opts.colour = true)
+Glyph -> Sink: beginGlyph
+loop each ColourLayer
+  Glyph -> Sink: group(layer.transform)
+  Glyph -> Sink: path(layer.path, fill=layer.paint)
+  Glyph -> Sink: endGroup
+end
+Glyph -> Sink: endGlyph
+
+== CBDT / sbix PNG emoji ==
+Caller -> Glyph: vectorize(sink, opts.embedPng = true)
+Glyph -> Sink: beginGlyph
+Glyph -> Sink: image(pngBytes, 0, 0, w, h)
+Glyph -> Sink: endGlyph
+
+== SVG-in-OTF ==
+Caller -> Glyph: vectorize(sink)
+Glyph -> Sink: beginGlyph
+Glyph -> Sink: (embed verbatim SVG fragment via group)
+Glyph -> Sink: endGlyph
+
+@enduml

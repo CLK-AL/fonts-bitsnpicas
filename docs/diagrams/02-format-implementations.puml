@@ -1,0 +1,108 @@
+@startuml 02-format-implementations
+' Concrete Font / Glyph implementations across modules.
+' Each format module provides FontReader + FontWriter that conform
+' to modules.core interfaces.
+
+skinparam defaultFontName "JetBrains Mono"
+skinparam shadowing false
+hide empty members
+
+package "modules.core" as core {
+  interface Font
+  interface Glyph
+  interface "FontReader<F>" as Reader
+  interface "FontWriter<F>" as Writer
+}
+
+package "modules.bitmap" as bitmap {
+  class BitmapFont
+  class BitmapGlyph {
+    ' byte[rows][cols] raster
+    + bitmap: Array<ByteArray>
+    + rasterize(sink, scale)
+    + vectorize(sink, opts)
+    ' bitmap→path trace lives here
+  }
+  class BdfReader
+  class PsfReader
+  class FntReader
+  class HexReader
+  class PlaydateReader
+  BitmapFont --|> Font
+  BitmapGlyph --|> Glyph
+  BdfReader .up.|> Reader
+  PsfReader .up.|> Reader
+  FntReader .up.|> Reader
+  HexReader .up.|> Reader
+  PlaydateReader .up.|> Reader
+}
+
+package "modules.figlet" as figlet {
+  class FigletFont
+  class FigletGlyph {
+    + rows: List<String>
+    + hardblank: Char
+    + rasterize(sink, scale)
+    + vectorize(sink, opts)
+    ' each lit char becomes a unit-square path
+  }
+  class FlfReader
+  class TlfReader
+  FigletFont --|> Font
+  FigletGlyph --|> Glyph
+  FlfReader .up.|> Reader
+  TlfReader .up.|> Reader
+}
+
+package "modules.sprite" as sprite {
+  class SpriteFont
+  class SpriteGlyph {
+    + sheet: ARGB8Bitmap
+    + bounds: Rect
+    + rasterize(sink, scale)
+    + vectorize(sink, opts)
+    ' colour pixels → per-layer paths
+  }
+  class SpriteSheetReader
+  SpriteFont --|> Font
+  SpriteGlyph --|> Glyph
+  SpriteSheetReader .up.|> Reader
+}
+
+package "modules.truetype" as truetype {
+  class OutlineFont
+  class OutlineGlyph {
+    + contours: List<Contour>
+    + colourLayers: List<ColourLayer>
+    + rasterize(sink, scale)
+    + vectorize(sink, opts)
+  }
+  class ColourLayer {
+    + path: String
+    + paint: Paint
+    + transform: Affine2D?
+  }
+  class TtfReader
+  class CffReader
+  class ColrV0Reader
+  class ColrV1Reader
+  class CbdtReader
+  class SbixReader
+  class SvgInOtfReader
+  class TtfWriter
+  class PuaaReader
+  OutlineFont --|> Font
+  OutlineGlyph --|> Glyph
+  OutlineGlyph *-- "0..*" ColourLayer
+  TtfReader .up.|> Reader
+  CffReader .up.|> Reader
+  ColrV0Reader .up.|> Reader
+  ColrV1Reader .up.|> Reader
+  CbdtReader .up.|> Reader
+  SbixReader .up.|> Reader
+  SvgInOtfReader .up.|> Reader
+  PuaaReader .up.|> Reader
+  TtfWriter .up.|> Writer
+}
+
+@enduml

@@ -1,0 +1,179 @@
+@startuml 01-core-api
+' Low-level class diagram: unified font API in modules/core/commonMain
+' Consumed by every FontReader / FontWriter / FontRenderer in every
+' format module (bitmap, figlet, sprite, outline, svg, png-emoji).
+
+skinparam defaultFontName "JetBrains Mono"
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+hide empty members
+
+package "modules.core :: commonMain" {
+
+  ' -------- Font model --------
+  interface Font {
+    + val metadata: FontMetadata
+    + glyphs(): Sequence<Glyph>
+    + glyph(codepoints: List<Int>): Glyph?
+  }
+
+  interface Glyph {
+    + val advance: Int
+    + codepoints(): Sequence<Int>
+    ' NB: a Glyph may represent a ligature or a ZWJ emoji cluster,
+    ' so it is keyed by a sequence of codepoints — not one.
+    + rasterize(target: PixelSink, scale: Float = 1f)
+    + vectorize(target: SvgSink, options: VectorizeOptions = VectorizeOptions())
+  }
+
+  class FontMetadata {
+    + family: String
+    + style: String
+    + pixelHeight: Int?
+    + unitsPerEm: Int?
+    + ascent: Float
+    + descent: Float
+    + xHeight: Float?
+    + capHeight: Float?
+    + hasColour: Boolean
+    + license: String?
+  }
+
+  enum FontFormat {
+    BDF
+    PSF
+    FNT
+    HEX
+    PLAYDATE
+    TTF
+    CFF
+    PUAA
+    FLF
+    TLF
+    SPRITE_PNG
+    SVG_FONT
+    COLRv0
+    COLRv1
+    CBDT
+    SBIX
+  }
+
+  Font ..> FontMetadata
+  Font *-- "0..*" Glyph : glyphs
+
+  ' -------- IO --------
+  interface "FontReader<F : Font>" as FontReader {
+    + val formats: Set<FontFormat>
+    + read(source: ByteSource): F
+  }
+
+  interface "FontWriter<F : Font>" as FontWriter {
+    + write(font: F, sink: ByteSink)
+  }
+
+  interface "FontRenderer<F : Font>" as FontRenderer {
+    + render(font: F, text: String, options: RenderOptions): RenderedFrame
+  }
+
+  FontReader ..> Font
+  FontWriter ..> Font
+  FontRenderer ..> Font
+
+  ' -------- PixelSink (raster path) --------
+  interface PixelSink {
+    + size: IntSize
+    + setPixel(x: Int, y: Int, rgba: Int)
+    + drawRect(x: Int, y: Int, w: Int, h: Int, rgba: Int)
+    + drawImage(bitmap: ARGB8Bitmap, x: Int, y: Int)
+  }
+
+  ' -------- SvgSink (vector path) --------
+  interface SvgSink {
+    + beginGlyph(width: Float, height: Float, viewBox: Rect)
+    + path(d: String, fill: Paint? = null, stroke: Stroke? = null)
+    + image(pngBytes: ByteArray, x: Float, y: Float, w: Float, h: Float)
+    + group(transform: Affine2D, block: SvgSink.() -> Unit)
+    + endGlyph()
+  }
+
+  class VectorizeOptions {
+    + colour: Boolean = true
+    + bitmapTracer: BitmapTracer = SQUARE
+    + embedPng: Boolean = true
+    + svgPrecision: Int = 3
+  }
+
+  enum BitmapTracer {
+    SQUARE
+    MOORE_NEIGHBOUR
+    POTRACE_LIKE
+  }
+
+  abstract class Paint
+  class "Paint.Solid" as PaintSolid {
+    + rgba: Int
+  }
+  class "Paint.LinearGradient" as PaintLG {
+    + stops: List<GradientStop>
+    + start: Point
+    + end: Point
+  }
+  class "Paint.RadialGradient" as PaintRG {
+    + stops: List<GradientStop>
+    + centre: Point
+    + radius: Float
+  }
+
+  PaintSolid --|> Paint
+  PaintLG --|> Paint
+  PaintRG --|> Paint
+
+  class Stroke {
+    + width: Float
+    + cap: StrokeCap
+    + join: StrokeJoin
+    + miterLimit: Float
+    + dashPattern: List<Float>?
+  }
+
+  class GradientStop {
+    + offset: Float
+    + paint: Paint
+  }
+
+  class Affine2D {
+    + m11: Float
+    + m12: Float
+    + m21: Float
+    + m22: Float
+    + tx: Float
+    + ty: Float
+    + { static } identity(): Affine2D
+    + { static } translate(dx, dy): Affine2D
+    + { static } scale(sx, sy): Affine2D
+  }
+
+  Glyph ..> PixelSink : rasterize
+  Glyph ..> SvgSink  : vectorize
+  Glyph ..> VectorizeOptions
+  SvgSink ..> Paint
+  SvgSink ..> Stroke
+  SvgSink ..> Affine2D
+  VectorizeOptions ..> BitmapTracer
+
+  ' -------- Shaping (for codepoints() → ligatures / emoji ZWJ) --------
+  interface Shaper {
+    + shape(text: String, font: Font): List<GlyphRun>
+  }
+
+  class GlyphRun {
+    + glyphs: List<Glyph>
+    + positions: List<Point>
+    + advance: Float
+  }
+
+  Font ..> Shaper : optional
+  Shaper ..> GlyphRun
+}
+
+@enduml

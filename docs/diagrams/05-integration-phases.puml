@@ -1,0 +1,64 @@
+@startuml 05-integration-phases
+' Integration paths compared: Phase A (Gradle dep + surgical copy) vs
+' Phase B (full vendor into real folders under modules/).
+
+skinparam defaultFontName "JetBrains Mono"
+skinparam shadowing false
+skinparam component {
+  BackgroundColor<<phaseA>> #EEEEFF
+  BackgroundColor<<phaseB>> #EEFFEE
+}
+
+rectangle "Phase A — weeks\nGradle dep + surgical copy" <<phaseA>> {
+  [fonts-bitsnpicas\n(existing Java tree +\nKotlin tests)] as A_fbp
+  [banana-figlet JAR\nfrom Maven Central\nio.leego:banana-figlet:*] as A_bf
+  [ChatGameFontificator\ncom.glitchcog.fontificator.sprite /\n.config subset\n(copied into vendor/cgf)] as A_cgf
+
+  A_fbp --> A_bf : compile dependency
+  A_fbp --> A_cgf : source include
+  note bottom of A_cgf
+    Copy only sprite + config pkgs.
+    No IRC / windowing code.
+    Preserve original LICENSE + NOTICE.
+  end note
+}
+
+rectangle "Phase B — KMP migration" <<phaseB>> {
+  [modules/core\ncommonMain\nFont / Glyph / FontReader /\nSvgSink / PixelSink] as B_core
+  [modules/bitmap] as B_bm
+  [modules/figlet\n(vendored BananaUtils,\ntranslated to commonMain)] as B_fg
+  [modules/sprite\n(promoted from vendor/cgf\nto full commonMain module)] as B_sp
+  [modules/truetype\n(existing TTF code\n+ COLR / SVG / CBDT paths)] as B_tt
+  [modules/chat-preview] as B_cp
+
+  B_bm --> B_core
+  B_fg --> B_core
+  B_sp --> B_core
+  B_tt --> B_core
+  B_cp --> B_sp
+  B_cp --> B_core
+
+  note bottom of B_fg
+    Drop the Maven dep.
+    Upstream SHA recorded in
+    third_party/MANIFEST.toml.
+    commonMain cannot depend
+    on a JVM-only JAR.
+  end note
+}
+
+rectangle "Git submodules — NOT USED" as NO {
+  [banana-figlet submodule] as S_bf
+  [ChatGameFontificator submodule] as S_cgf
+}
+note right of NO
+  Rejected: three different upstream
+  maintainers; KMP refactor needs atomic
+  cross-module edits; submodules lock
+  commits not versions.
+end note
+
+A_fbp -[hidden]-> B_core
+B_core -[hidden]-> S_bf
+
+@enduml

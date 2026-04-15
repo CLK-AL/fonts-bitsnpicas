@@ -1,0 +1,60 @@
+@startuml 07-fix-then-freeze-then-port
+' Activity: the TDD fix-then-freeze-then-port cycle per finding.
+
+skinparam defaultFontName "JetBrains Mono"
+skinparam shadowing false
+
+start
+:Read finding F in CODE_REVIEW.md;
+:Author Kotlin test in src/test/kotlin/**
+that reproduces F against current Java;
+:Commit "test: F red test reproduces ...";
+
+repeat
+  :Run CI profile=java;
+  if (test red?) then (yes, as expected)
+  else (green — test is wrong)
+    :Adjust test;
+  endif
+repeat while (not red)
+
+:Fix Java minimally;
+:Commit "fix: F <short description>";
+
+repeat
+  :Run CI profile=java;
+  if (test green?) then (yes)
+  else (still red)
+    :Adjust Java fix;
+  endif
+repeat while (not green)
+
+if (all findings closed AND
+    JaCoCo 100% line+branch
+    on Java tree?) then (yes)
+  :Tag legacy-v1;
+  :Apply CODEOWNERS read-only
+  on Java source tree;
+  :Begin Phase D — port to commonMain;
+else (no)
+  :Take the next finding;
+  stop
+endif
+
+:Wire KotlinIo actual;
+:Same tests now run twice —
+against frozen Java AND
+against commonMain Kotlin;
+
+if (differential parity byte-exact?) then (yes)
+  :Retire Java delegate;
+  :Kover must stay 100%;
+  stop
+else (no)
+  :Document divergence
+  as explicit test
+  or fix commonMain;
+  stop
+endif
+
+@enduml

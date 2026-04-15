@@ -1,0 +1,65 @@
+@startuml 03-modules-and-hosts
+' Component diagram: Gradle module dependency graph + UI hosts.
+
+skinparam defaultFontName "JetBrains Mono"
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "modules (library)" {
+  [core]             as Core
+  [bitmap]           as Bitmap
+  [figlet]           as Figlet
+  [sprite]           as Sprite
+  [truetype]         as Truetype
+  [chat-preview]     as Chat
+  [cli]              as Cli
+}
+
+package "modules (ui)" {
+  [ui-shared]        as UiShared
+  [ui-swing]         as UiSwing
+  [ui-compose-desktop] as UiDesktop
+  [ui-compose-html]    as UiWeb
+}
+
+package "3rd-party (KMP / JVM)" {
+  [Skiko]            as Skiko
+  [Compose MP]       as Compose
+  [FontBox (opt)]    as FontBox
+  [harfbuzz4j (opt)] as Hb
+}
+
+Bitmap    --> Core
+Figlet    --> Core
+Sprite    --> Core
+Truetype  --> Core
+Chat      --> Sprite
+Chat      --> Core
+
+Cli       --> Bitmap
+Cli       --> Figlet
+Cli       --> Sprite
+Cli       --> Truetype
+
+UiShared  --> Core
+UiShared  --> Compose
+UiShared  --> Skiko
+Truetype  ..> FontBox : jvmMain fallback
+Core      ..> Hb      : jvmMain shaping fallback
+Compose   ..> Skiko
+
+UiSwing      --> UiShared
+UiDesktop    --> UiShared
+UiWeb        --> UiShared
+
+UiSwing   --> Bitmap : legacy editor
+UiDesktop --> Bitmap
+UiDesktop --> Figlet
+UiDesktop --> Sprite
+UiDesktop --> Truetype
+UiWeb     --> Bitmap
+UiWeb     --> Figlet
+UiWeb     --> Sprite
+UiWeb     --> Truetype
+
+@enduml
