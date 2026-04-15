@@ -25,15 +25,26 @@ public class BDFBitmapFontImporter implements BitmapFontImporter {
 	};
 	
 	public BitmapFont[] importFont(byte[] data) throws IOException {
-		return importFont(new Scanner(new ByteArrayInputStream(data), "UTF-8"));
+		// C4: close the Scanner (and its underlying stream) via try-with-resources.
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(data);
+		     Scanner scan = new Scanner(bais, "UTF-8")) {
+			return importFont(scan);
+		}
 	}
-	
+
 	public BitmapFont[] importFont(InputStream is) throws IOException {
-		return importFont(new Scanner(is, "UTF-8"));
+		// C4: close the Scanner (and its underlying stream) via try-with-resources.
+		try (Scanner scan = new Scanner(is, "UTF-8")) {
+			return importFont(scan);
+		}
 	}
-	
+
 	public BitmapFont[] importFont(File file) throws IOException {
-		return importFont(new Scanner(new FileInputStream(file), "UTF-8"));
+		// C4: close the Scanner (and its underlying FileInputStream) via try-with-resources.
+		try (FileInputStream fis = new FileInputStream(file);
+		     Scanner scan = new Scanner(fis, "UTF-8")) {
+			return importFont(scan);
+		}
 	}
 	
 	public BitmapFont[] importFont(Scanner scan) throws IOException {
