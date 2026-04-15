@@ -1,0 +1,11 @@
+# Stage S3 freeze (`legacy-v1`) — the legacy Java source tree is
+# read-only. Any edit inside the path below requires explicit
+# sign-off from a repo admin; CI enforces this via the
+# freeze-guard workflow (.github/workflows/freeze-guard.yml).
+#
+# Exceptions (pre-approved by design, see MIGRATION_PLAN.md §0.5):
+#   - vendor/** subtrees pulled via scripts/vendor-pull.sh
+#
+# The port happens in modules/** (Kotlin/KMP), not here.
+
+main/java/BitsNPicas/src/**                @legacy-frozen

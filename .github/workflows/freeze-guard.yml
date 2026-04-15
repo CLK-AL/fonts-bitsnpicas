@@ -1,0 +1,35 @@
+name: freeze-guard
+
+# Fails any PR whose diff against the default branch touches paths
+# frozen at tag `legacy-v1` (Stage S3). The authoritative list of
+# frozen paths lives in `.github/CODEOWNERS`.
+#
+# To intentionally modify a frozen file, branch-protection rules
+# on the default branch must require a repo-admin review.
+
+on:
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Check for edits inside the frozen tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${GITHUB_BASE_REF:-master}"
+          git fetch origin "$BASE" --depth=1
+          DIFF=$(git diff --name-only "origin/$BASE"...HEAD -- 'main/java/BitsNPicas/src/**' || true)
+          if [ -n "$DIFF" ]; then
+            echo "::error::This PR modifies files frozen at legacy-v1 (Stage S3)."
+            echo "::error::Modified paths:"
+            printf '%s\n' "$DIFF" | sed 's/^/  - /'
+            echo "::error::The path forward is to patch modules/** (Kotlin/KMP). See MIGRATION_PLAN.md §0.5 and INTEGRATION.md."
+            echo "::error::If this is a deliberate exception (e.g. a rare upstream merge), have a repo admin ack on the PR."
+            exit 1
+          fi
+          echo "No edits inside the frozen tree. OK."
