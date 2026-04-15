@@ -150,6 +150,12 @@ public class FNTBitmapFontImporter implements BitmapFontImporter {
 			byte[][] bitmap = new byte[geHeight[i]][geWidth[i]];
 			for (int dy = geOffset[i], by = 0; by < geHeight[i]; by++, dy++) {
 				for (int dx = dy, bx = 0; bx < geWidth[i]; dx += geHeight[i]) {
+					// C2: guard against header-derived dx overrunning `data`.
+					if (dx < 0 || dx >= data.length) {
+						throw new IOException("FNT glyph offset " + dx
+								+ " out of bounds (data.length=" + data.length
+								+ ") for glyph " + i);
+					}
 					for (int m = 0x80; bx < geWidth[i] && m != 0; bx++, m >>= 1) {
 						if ((data[dx] & m) != 0) {
 							bitmap[by][bx] = -1;
