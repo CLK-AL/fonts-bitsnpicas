@@ -50,9 +50,11 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 // Use the current JDK for Kotlin compilation (no toolchain auto-provisioning).
+// Match Kotlin's target to the Java source/target compatibility to keep the
+// Gradle validation happy.
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
     }
 }
 
