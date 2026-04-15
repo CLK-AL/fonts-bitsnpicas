@@ -99,6 +99,14 @@ public class PSFBitmapFontImporter implements BitmapFontImporter {
 		
 		if (version >= 2 && headerSize > 32) in.readFully(new byte[headerSize - 32]);
 		
+		// C1/C14: guard against headers whose declared geometry overruns the
+		// per-glyph byte buffer. charSize must be at least height * ceil(width/8).
+		int bytesPerRow = (width + 7) / 8;
+		long expectedCharSize = (long) height * (long) bytesPerRow;
+		if (height < 0 || width < 0 || bytesPerRow < 0 || charSize < expectedCharSize) {
+			throw new IOException("PSF glyph size " + charSize + " too small for "
+					+ width + "x" + height + " (needs " + expectedCharSize + ")");
+		}
 		byte[][][] glyphs = new byte[numGlyphs][][];
 		byte[] data = new byte[charSize];
 		for (int i = 0; i < numGlyphs; i++) {
@@ -106,6 +114,10 @@ public class PSFBitmapFontImporter implements BitmapFontImporter {
 			glyphs[i] = new byte[height][width];
 			for (int j = 0, y = 0; y < height; y++) {
 				for (int x = 0; x < width; j++) {
+					if (j >= data.length) {
+						throw new IOException("PSF glyph data truncated at glyph " + i
+								+ " (byte index " + j + " >= " + data.length + ")");
+					}
 					for (int m = 0x80; x < width && m != 0; x++, m >>= 1) {
 						if ((data[j] & m) != 0) {
 							glyphs[i][y][x] = -1;
