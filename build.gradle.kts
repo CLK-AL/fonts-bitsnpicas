@@ -27,7 +27,12 @@ sourceSets {
             exclude("com/kreative/bitsnpicas/exporter/NFNTBitmapFontExporter.java")
         }
         resources {
-            setSrcDirs(emptyList<String>())
+            // The importer classes load their DTDs via Class.getResourceAsStream(),
+            // so treat the legacy src directory as a resources root too. Without
+            // this the Kbitx/Kpcax importers fail with MalformedURLException when
+            // the parser can't resolve <!DOCTYPE> references.
+            setSrcDirs(listOf("main/java/BitsNPicas/src"))
+            include("**/*.dtd")
         }
     }
     test {
