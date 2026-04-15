@@ -1,0 +1,6 @@
+# Enable auto-env through the sdkman_auto_env config
+# Run `sdk env` in this directory (or `sdk env install` first) to activate.
+java=25.0.2-graal
+kotlin=2.3.20
+gradle=9.4.1
+jbang=0.138.0
