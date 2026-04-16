@@ -1,6 +1,8 @@
 package com.kreative.bitsnpicas.core
 
+import com.kreative.bitsnpicas.BitmapFont as JavaBitmapFont
 import com.kreative.bitsnpicas.BitmapFontGlyph as JavaBitmapFontGlyph
+import com.kreative.bitsnpicas.importer.PSFBitmapFontImporter
 
 /**
  * JVM-only adapters that bridge the frozen Java `BitmapFontGlyph`
@@ -39,6 +41,34 @@ public object JavaLegacyAdapter {
             advance = g.characterWidth,
             // g.y is protected — use the public getter, which returns the ascent/y.
             y = g.y,
+        )
+    }
+
+    /**
+     * Import a PSF font via the frozen Java PSFBitmapFontImporter,
+     * then convert the result to commonMain types for parity testing.
+     */
+    public fun importPsfViaJava(bytes: ByteArray): BitmapFont {
+        val importer = PSFBitmapFontImporter()
+        val javaFonts: Array<JavaBitmapFont> = importer.importFont(bytes)
+        val jf = javaFonts[0]
+
+        val glyphs = mutableMapOf<Int, BitmapGlyph>()
+        for ((cp, jGlyph) in jf.characters(true)) {
+            val kg = fromJava(jGlyph) ?: continue
+            glyphs[cp] = kg
+        }
+
+        return BitmapFont(
+            glyphs = glyphs,
+            emAscent = jf.emAscent,
+            emDescent = jf.emDescent,
+            lineAscent = jf.lineAscent,
+            lineDescent = jf.lineDescent,
+            xHeight = jf.xHeight,
+            capHeight = jf.capHeight,
+            lineGap = jf.lineGap,
+            newGlyphWidth = jf.newGlyphWidth,
         )
     }
 

@@ -53,6 +53,62 @@ public class BitmapGlyph(
 
     override fun codepoints(): Sequence<Int> = codepoints.asSequence()
 
+    /**
+     * Remove empty rows/columns from the edges of this glyph,
+     * matching the frozen Java `BitmapFontGlyph.contract()` semantics.
+     * Returns a new contracted BitmapGlyph.
+     */
+    public fun contract(): BitmapGlyph {
+        if (bitmap.isEmpty()) return BitmapGlyph(emptyList(), 0, advance, 0, codepoints)
+
+        val gw = bitmap[0].size
+        val gh = bitmap.size
+        val gx = x
+        val gy = y
+
+        // Find bounding box of non-zero pixels
+        var cy1 = -gy      // top  in world coords
+        var cy2 = -gy + gh // bottom
+        var cx1 = gx       // left
+        var cx2 = gx + gw  // right
+
+        // Trim bottom rows
+        while (cy2 > cy1 && rowEmpty(cy2 + gy - 1)) cy2--
+        // Trim top rows
+        while (cy1 < cy2 && rowEmpty(cy1 + gy)) cy1++
+        // Trim right columns
+        while (cx2 > cx1 && colEmpty(cx2 - gx - 1)) cx2--
+        // Trim left columns
+        while (cx1 < cx2 && colEmpty(cx1 - gx)) cx1++
+
+        if (cx2 == cx1 || cy2 == cy1) {
+            return BitmapGlyph(emptyList(), 0, advance, 0, codepoints)
+        }
+
+        val cw = cx2 - cx1
+        val ch = cy2 - cy1
+        if (cx1 == gx && cy1 == -gy && cx2 == gx + gw && cy2 == -gy + gh) {
+            return this // no contraction needed
+        }
+
+        val newRows = List(ch) { dy ->
+            val sy = cy1 + gy + dy
+            val sx = cx1 - gx
+            IntArray(cw) { dx -> bitmap[sy][sx + dx] }
+        }
+        return BitmapGlyph(newRows, cx1, advance, -cy1, codepoints)
+    }
+
+    private fun rowEmpty(row: Int): Boolean {
+        for (b in bitmap[row]) if (b != 0) return false
+        return true
+    }
+
+    private fun colEmpty(col: Int): Boolean {
+        for (row in bitmap) if (row[col] != 0) return false
+        return true
+    }
+
     public companion object {
         /**
          * Compose a set of bitmap glyphs into one. Mirrors the
