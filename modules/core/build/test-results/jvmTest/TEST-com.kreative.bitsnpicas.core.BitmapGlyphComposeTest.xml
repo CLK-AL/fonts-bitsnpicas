@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="BitmapGlyphComposeTest[jvm]" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-04-16T00:32:24.399Z" hostname="runsc" time="0.01">
+  <properties/>
+  <testcase name="compose skips null entries()[jvm]" classname="com.kreative.bitsnpicas.core.BitmapGlyphComposeTest" time="0.001"/>
+  <testcase name="compose rejects glyph with empty bitmap()[jvm]" classname="com.kreative.bitsnpicas.core.BitmapGlyphComposeTest" time="0.001"/>
+  <testcase name="compose rejects empty input()[jvm]" classname="com.kreative.bitsnpicas.core.BitmapGlyphComposeTest" time="0.001"/>
+  <testcase name="compose single glyph returns bit-exact copy()[jvm]" classname="com.kreative.bitsnpicas.core.BitmapGlyphComposeTest" time="0.001"/>
+  <testcase name="advance is the max across contributing glyphs()[jvm]" classname="com.kreative.bitsnpicas.core.BitmapGlyphComposeTest" time="0.0"/>
+  <testcase name="compose takes the max intensity at each pixel()[jvm]" classname="com.kreative.bitsnpicas.core.BitmapGlyphComposeTest" time="0.0"/>
+  <testcase name="compose two non-overlapping glyphs stacks them()[jvm]" classname="com.kreative.bitsnpicas.core.BitmapGlyphComposeTest" time="0.0"/>
+  <testcase name="compose rejects all-null input()[jvm]" classname="com.kreative.bitsnpicas.core.BitmapGlyphComposeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
