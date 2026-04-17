@@ -24,6 +24,14 @@ import com.kreative.bitsnpicas.truetype.NameTable as JavaNameTable
 import com.kreative.bitsnpicas.truetype.NameTableEntry as JavaNameTableEntry
 import com.kreative.bitsnpicas.truetype.PostTable as JavaPostTable
 import com.kreative.bitsnpicas.truetype.PostTableEntry as JavaPostTableEntry
+import com.kreative.bitsnpicas.truetype.Os2Table as JavaOs2Table
+import com.kreative.bitsnpicas.truetype.HheaTable as JavaHheaTable
+import com.kreative.bitsnpicas.truetype.HmtxTable as JavaHmtxTable
+import com.kreative.bitsnpicas.truetype.HmtxTableEntry as JavaHmtxTableEntry
+import com.kreative.bitsnpicas.truetype.MaxpTable as JavaMaxpTable
+import com.kreative.bitsnpicas.truetype.LocaTable as JavaLocaTable
+import com.kreative.bitsnpicas.truetype.GlyfTable as JavaGlyfTable
+import com.kreative.bitsnpicas.truetype.CmapTable as JavaCmapTable
 import com.kreative.bitsnpicas.core.truetype.TrueTypeFile as KTrueTypeFile
 import com.kreative.bitsnpicas.core.truetype.HeadTable as KHeadTable
 import com.kreative.bitsnpicas.core.truetype.NameTable as KNameTable
@@ -31,6 +39,14 @@ import com.kreative.bitsnpicas.core.truetype.NameTableEntry as KNameTableEntry
 import com.kreative.bitsnpicas.core.truetype.PostTable as KPostTable
 import com.kreative.bitsnpicas.core.truetype.PostTableEntry as KPostTableEntry
 import com.kreative.bitsnpicas.core.truetype.UnknownTable as KUnknownTable
+import com.kreative.bitsnpicas.core.truetype.Os2Table as KOs2Table
+import com.kreative.bitsnpicas.core.truetype.HheaTable as KHheaTable
+import com.kreative.bitsnpicas.core.truetype.HmtxTable as KHmtxTable
+import com.kreative.bitsnpicas.core.truetype.HmtxTableEntry as KHmtxTableEntry
+import com.kreative.bitsnpicas.core.truetype.MaxpTable as KMaxpTable
+import com.kreative.bitsnpicas.core.truetype.LocaTable as KLocaTable
+import com.kreative.bitsnpicas.core.truetype.GlyfTable as KGlyfTable
+import com.kreative.bitsnpicas.core.truetype.CmapTable as KCmapTable
 
 /**
  * JVM-only adapters that bridge the frozen Java `BitmapFontGlyph`
@@ -525,6 +541,123 @@ public object JavaLegacyAdapter {
                 }
                 jt
             }
+            is KOs2Table -> {
+                val jt = JavaOs2Table()
+                jt.length = table.length
+                jt.version = table.version
+                jt.averageCharWidth = table.averageCharWidth
+                jt.weightClass = table.weightClass
+                jt.widthClass = table.widthClass
+                jt.flags = table.flags
+                jt.subscriptXSize = table.subscriptXSize
+                jt.subscriptYSize = table.subscriptYSize
+                jt.subscriptXOffset = table.subscriptXOffset
+                jt.subscriptYOffset = table.subscriptYOffset
+                jt.superscriptXSize = table.superscriptXSize
+                jt.superscriptYSize = table.superscriptYSize
+                jt.superscriptXOffset = table.superscriptXOffset
+                jt.superscriptYOffset = table.superscriptYOffset
+                jt.strikeoutWidth = table.strikeoutWidth
+                jt.strikeoutPosition = table.strikeoutPosition
+                jt.familyClass = table.familyClass
+                jt.familySubClass = table.familySubClass
+                jt.panoseFamilyType = table.panoseFamilyType
+                jt.panoseSerifStyle = table.panoseSerifStyle
+                jt.panoseWeight = table.panoseWeight
+                jt.panoseProportion = table.panoseProportion
+                jt.panoseContrast = table.panoseContrast
+                jt.panoseStrokeVariation = table.panoseStrokeVariation
+                jt.panoseArmStyle = table.panoseArmStyle
+                jt.panoseLetterform = table.panoseLetterform
+                jt.panoseMidline = table.panoseMidline
+                jt.panoseXHeight = table.panoseXHeight
+                table.unicodeRanges.copyInto(jt.unicodeRanges)
+                jt.vendorID = table.vendorID
+                jt.fsSelection = table.fsSelection
+                jt.fsFirstCharIndex = table.fsFirstCharIndex
+                jt.fsLastCharIndex = table.fsLastCharIndex
+                jt.typoAscent = table.typoAscent
+                jt.typoDescent = table.typoDescent
+                jt.typoLineGap = table.typoLineGap
+                jt.winAscent = table.winAscent
+                jt.winDescent = table.winDescent
+                table.codePages.copyInto(jt.codePages)
+                jt.xHeight = table.xHeight
+                jt.capHeight = table.capHeight
+                jt.defaultChar = table.defaultChar
+                jt.breakChar = table.breakChar
+                jt.maxContext = table.maxContext
+                jt.lowerOpticalPointSize = table.lowerOpticalPointSize
+                jt.upperOpticalPointSize = table.upperOpticalPointSize
+                jt
+            }
+            is KHheaTable -> {
+                val jt = JavaHheaTable()
+                jt.version = table.version
+                jt.ascent = table.ascent
+                jt.descent = table.descent
+                jt.lineGap = table.lineGap
+                jt.advanceWidthMax = table.advanceWidthMax
+                jt.minLeftSideBearing = table.minLeftSideBearing
+                jt.minRightSideBearing = table.minRightSideBearing
+                jt.xMaxExtent = table.xMaxExtent
+                jt.caretSlopeRise = table.caretSlopeRise
+                jt.caretSlopeRun = table.caretSlopeRun
+                jt.caretOffset = table.caretOffset
+                jt.reserved1 = table.reserved1
+                jt.reserved2 = table.reserved2
+                jt.reserved3 = table.reserved3
+                jt.reserved4 = table.reserved4
+                jt.metricDataFormat = table.metricDataFormat
+                jt.numLongHorMetrics = table.numLongHorMetrics
+                jt
+            }
+            is KMaxpTable -> {
+                val jt = JavaMaxpTable()
+                jt.version = table.version
+                jt.numGlyphs = table.numGlyphs
+                jt.maxPoints = table.maxPoints
+                jt.maxContours = table.maxContours
+                jt.maxComponentPoints = table.maxComponentPoints
+                jt.maxComponentContours = table.maxComponentContours
+                jt.maxZones = table.maxZones
+                jt.maxTwilightPoints = table.maxTwilightPoints
+                jt.maxStorage = table.maxStorage
+                jt.maxFunctionDefs = table.maxFunctionDefs
+                jt.maxInstructionDefs = table.maxInstructionDefs
+                jt.maxStackElements = table.maxStackElements
+                jt.maxSizeOfInstructions = table.maxSizeOfInstructions
+                jt.maxComponentElements = table.maxComponentElements
+                jt.maxComponentDepth = table.maxComponentDepth
+                jt
+            }
+            is KHmtxTable -> {
+                val jt = JavaHmtxTable()
+                for (e in table.entries) {
+                    jt.add(JavaHmtxTableEntry(e.advanceWidth, e.leftSideBearing))
+                }
+                jt
+            }
+            is KLocaTable -> {
+                val jt = JavaLocaTable()
+                for (offset in table.offsets) {
+                    jt.add(offset)
+                }
+                jt
+            }
+            is KGlyfTable -> {
+                val jt = JavaGlyfTable()
+                for (data in table.glyphs) {
+                    jt.add(data.copyOf())
+                }
+                jt
+            }
+            is KCmapTable -> {
+                // For CmapTable, we compile via Kotlin and pass as UnknownTable
+                // since bridging all subtable formats is complex
+                val rawData = table.compile()
+                com.kreative.bitsnpicas.truetype.UnknownTable("cmap", rawData)
+            }
             is KUnknownTable -> {
                 val jt = com.kreative.bitsnpicas.truetype.UnknownTable(table.tableName, table.data.copyOf())
                 jt
@@ -601,6 +734,124 @@ public object JavaLegacyAdapter {
                         t.entries.add(KPostTableEntry(je.stringValue()))
                     }
                 }
+                t
+            }
+            is JavaOs2Table -> {
+                val t = KOs2Table()
+                t.length = jt.length
+                t.version = jt.version
+                t.averageCharWidth = jt.averageCharWidth
+                t.weightClass = jt.weightClass
+                t.widthClass = jt.widthClass
+                t.flags = jt.flags
+                t.subscriptXSize = jt.subscriptXSize
+                t.subscriptYSize = jt.subscriptYSize
+                t.subscriptXOffset = jt.subscriptXOffset
+                t.subscriptYOffset = jt.subscriptYOffset
+                t.superscriptXSize = jt.superscriptXSize
+                t.superscriptYSize = jt.superscriptYSize
+                t.superscriptXOffset = jt.superscriptXOffset
+                t.superscriptYOffset = jt.superscriptYOffset
+                t.strikeoutWidth = jt.strikeoutWidth
+                t.strikeoutPosition = jt.strikeoutPosition
+                t.familyClass = jt.familyClass
+                t.familySubClass = jt.familySubClass
+                t.panoseFamilyType = jt.panoseFamilyType
+                t.panoseSerifStyle = jt.panoseSerifStyle
+                t.panoseWeight = jt.panoseWeight
+                t.panoseProportion = jt.panoseProportion
+                t.panoseContrast = jt.panoseContrast
+                t.panoseStrokeVariation = jt.panoseStrokeVariation
+                t.panoseArmStyle = jt.panoseArmStyle
+                t.panoseLetterform = jt.panoseLetterform
+                t.panoseMidline = jt.panoseMidline
+                t.panoseXHeight = jt.panoseXHeight
+                jt.unicodeRanges.copyInto(t.unicodeRanges)
+                t.vendorID = jt.vendorID
+                t.fsSelection = jt.fsSelection
+                t.fsFirstCharIndex = jt.fsFirstCharIndex
+                t.fsLastCharIndex = jt.fsLastCharIndex
+                t.typoAscent = jt.typoAscent
+                t.typoDescent = jt.typoDescent
+                t.typoLineGap = jt.typoLineGap
+                t.winAscent = jt.winAscent
+                t.winDescent = jt.winDescent
+                jt.codePages.copyInto(t.codePages)
+                t.xHeight = jt.xHeight
+                t.capHeight = jt.capHeight
+                t.defaultChar = jt.defaultChar
+                t.breakChar = jt.breakChar
+                t.maxContext = jt.maxContext
+                t.lowerOpticalPointSize = jt.lowerOpticalPointSize
+                t.upperOpticalPointSize = jt.upperOpticalPointSize
+                t
+            }
+            is JavaHheaTable -> {
+                val t = KHheaTable()
+                t.version = jt.version
+                t.ascent = jt.ascent
+                t.descent = jt.descent
+                t.lineGap = jt.lineGap
+                t.advanceWidthMax = jt.advanceWidthMax
+                t.minLeftSideBearing = jt.minLeftSideBearing
+                t.minRightSideBearing = jt.minRightSideBearing
+                t.xMaxExtent = jt.xMaxExtent
+                t.caretSlopeRise = jt.caretSlopeRise
+                t.caretSlopeRun = jt.caretSlopeRun
+                t.caretOffset = jt.caretOffset
+                t.reserved1 = jt.reserved1
+                t.reserved2 = jt.reserved2
+                t.reserved3 = jt.reserved3
+                t.reserved4 = jt.reserved4
+                t.metricDataFormat = jt.metricDataFormat
+                t.numLongHorMetrics = jt.numLongHorMetrics
+                t
+            }
+            is JavaMaxpTable -> {
+                val t = KMaxpTable()
+                t.version = jt.version
+                t.numGlyphs = jt.numGlyphs
+                t.maxPoints = jt.maxPoints
+                t.maxContours = jt.maxContours
+                t.maxComponentPoints = jt.maxComponentPoints
+                t.maxComponentContours = jt.maxComponentContours
+                t.maxZones = jt.maxZones
+                t.maxTwilightPoints = jt.maxTwilightPoints
+                t.maxStorage = jt.maxStorage
+                t.maxFunctionDefs = jt.maxFunctionDefs
+                t.maxInstructionDefs = jt.maxInstructionDefs
+                t.maxStackElements = jt.maxStackElements
+                t.maxSizeOfInstructions = jt.maxSizeOfInstructions
+                t.maxComponentElements = jt.maxComponentElements
+                t.maxComponentDepth = jt.maxComponentDepth
+                t
+            }
+            is JavaHmtxTable -> {
+                val t = KHmtxTable()
+                for (je in jt) {
+                    t.entries.add(KHmtxTableEntry(je.advanceWidth, je.leftSideBearing))
+                }
+                t
+            }
+            is JavaLocaTable -> {
+                val t = KLocaTable()
+                for (offset in jt) {
+                    t.offsets.add(offset)
+                }
+                t
+            }
+            is JavaGlyfTable -> {
+                val t = KGlyfTable()
+                for (data in jt) {
+                    t.glyphs.add(data.copyOf())
+                }
+                t
+            }
+            is JavaCmapTable -> {
+                // For CmapTable, compile via Java and decompile via Kotlin
+                val rawData = jt.compile(emptyArray<JavaTrueTypeTable>())
+                val t = KCmapTable()
+                t.decompile(rawData)
                 t
             }
             else -> {

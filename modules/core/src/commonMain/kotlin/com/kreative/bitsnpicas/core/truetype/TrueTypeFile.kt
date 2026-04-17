@@ -35,6 +35,13 @@ public class TrueTypeFile {
             TAG_HEAD -> HeadTable()
             TAG_NAME -> NameTable()
             TAG_POST -> PostTable()
+            TAG_CMAP -> CmapTable()
+            TAG_OS2  -> Os2Table()
+            TAG_HHEA -> HheaTable()
+            TAG_HMTX -> HmtxTable()
+            TAG_MAXP -> MaxpTable()
+            TAG_LOCA -> LocaTable()
+            TAG_GLYF -> GlyfTable()
             else -> UnknownTable(tableId)
         }
     }
@@ -228,6 +235,13 @@ public class TrueTypeFile {
         internal const val TAG_HEAD: Int = 0x68656164 // "head"
         internal const val TAG_NAME: Int = 0x6E616D65 // "name"
         internal const val TAG_POST: Int = 0x706F7374 // "post"
+        internal const val TAG_CMAP: Int = 0x636D6170 // "cmap"
+        internal const val TAG_OS2:  Int = 0x4F532F32 // "OS/2"
+        internal const val TAG_HHEA: Int = 0x68686561 // "hhea"
+        internal const val TAG_HMTX: Int = 0x686D7478 // "hmtx"
+        internal const val TAG_MAXP: Int = 0x6D617870 // "maxp"
+        internal const val TAG_LOCA: Int = 0x6C6F6361 // "loca"
+        internal const val TAG_GLYF: Int = 0x676C7966 // "glyf"
 
         private fun chksum(data: ByteArray): Int {
             var sum = 0
