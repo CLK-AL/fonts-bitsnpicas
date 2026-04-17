@@ -181,9 +181,10 @@ all green, all gated by differential parity against frozen `legacy-v1`.
 `ArgbBitmap` (with platform-neutral SHA-256 hashing).
 `modules/ui-swing` exercises the Swing actual (headless
 `BufferedImage` pixel rendering). `modules/ui-compose-desktop`
-and `modules/ui-compose-html` are stub actuals pending the
-JetBrains Space Maven repo stabilisation for Compose MP 1.8.2
-transitive deps.
+has a real `ComposeGlyphRenderer` composable using Compose
+Canvas API (Compose MP 1.8.2, resolved via `google()` Maven).
+`modules/ui-compose-html` compiles with Compose on JVM; wasmJs
+target deferred until `modules/core` adds it.
 
 ### S7 dual CI/CD (all repos)
 

@@ -1,15 +1,40 @@
 package com.kreative.bitsnpicas.ui
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.kreative.bitsnpicas.core.BitmapFont
+import com.kreative.bitsnpicas.core.BitmapGlyph
+
 /**
- * Compose Desktop rendering driver — scaffold / stub.
- *
- * The [UiDriver] actual for JVM is provided by `:modules:ui-shared` jvmMain
- * (Swing-based off-screen rendering). This module will eventually replace
- * that actual with a Compose-based renderer using Skia/Skiko canvases.
- *
- * Stub status: S5 desktop sprint will implement Compose-native rendering.
- * Until then, all JVM rendering goes through the Swing actual in ui-shared.
+ * Compose Desktop glyph renderer — renders BitmapGlyph via Compose
+ * Canvas API. This is the "green" renderer that must match the
+ * Swing "blue" oracle pixel-for-pixel.
  */
-// No ComposeDesktopUiDriver actual needed — the JVM actual from ui-shared
-// provides the rendering implementation. This module exists to wire in
-// Compose Desktop dependencies for the future desktop application shell.
+object ComposeGlyphRenderer {
+
+    @Composable
+    fun GlyphCanvas(glyph: BitmapGlyph, scale: Int = 4, modifier: Modifier = Modifier) {
+        val w = glyph.width * scale
+        val h = glyph.height * scale
+        Canvas(modifier = modifier.size(w.dp, h.dp)) {
+            for (row in glyph.bitmap.indices) {
+                for (col in glyph.bitmap[row].indices) {
+                    val v = glyph.bitmap[row][col] and 0xFF
+                    if (v > 0) {
+                        drawRect(
+                            color = Color(0f, 0f, 0f, v / 255f),
+                            topLeft = Offset((col * scale).toFloat(), (row * scale).toFloat()),
+                            size = Size(scale.toFloat(), scale.toFloat()),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

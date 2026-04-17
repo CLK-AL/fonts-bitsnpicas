@@ -141,22 +141,25 @@ and an exporter in `commonMain`:
 | --- | --- | --- |
 | `modules/ui-shared` | `expect class UiDriver` + `ArgbBitmap` (with SHA-256) in commonMain; AWT `BufferedImage` actual in jvmMain (headless-safe) | 3 parity tests green |
 | `modules/ui-swing` | Blue oracle test module exercising the Swing actual | 5 tests green (dimension, SHA stability, alpha, scaling, multi-glyph) |
-| `modules/ui-compose-desktop` | Stub — Compose MP 1.8.2 deps disabled (JetBrains Space 503 on `androidx.lifecycle`); re-enable when repo stabilises | Compiles, no tests |
-| `modules/ui-compose-html` | Stub — wasmJs target deferred (same repo issue) | Compiles, no tests |
+| `modules/ui-compose-desktop` | ✅ Compose MP 1.8.2 — `ComposeGlyphRenderer.GlyphCanvas` composable renders `BitmapGlyph` via Compose Canvas API (real, not stub) | Compiles; rendering parity tests need Compose UI test harness |
+| `modules/ui-compose-html` | ✅ Compose JVM scaffold (wasmJs deferred until core adds wasmJs target) | Compiles |
 
 Commits: `2d3ce7d`, `7f723e9`, `b33156b`.
 
 The Swing actual renders `BitmapGlyph` bitmaps pixel-by-pixel
 into off-screen `BufferedImage(TYPE_INT_ARGB)`, fully headless.
-ARGB hashes captured here become the pinning oracle at S3 freeze
-for every future renderer (Compose Desktop at S5 full, Compose
-Web at S6).
+The Compose Desktop module has a real `ComposeGlyphRenderer`
+composable using Compose Canvas API. Both are backed by
+Compose MP 1.8.2 (resolved via `google()` Maven repo after
+JetBrains Space returned 404 and Maven Central returned 503 for
+`androidx.lifecycle`).
 
-### S6 progress: **scaffold landed** (stub)
+### S6 progress: **JVM scaffold with Compose deps** ✅
 
-`modules/ui-compose-html` compiles as a Kotlin/JVM placeholder.
-wasmJs target activation and real Compose Web rendering deferred
-to when the JetBrains Space Maven repo stabilises.
+`modules/ui-compose-html` compiles with Compose runtime +
+foundation on JVM. The wasmJs target requires `modules/core` to
+also declare a wasmJs target (Gradle variant matching). That
+lands when the full KMP target matrix is enabled on core.
 
 ### S7 progress: **dual CI workflows + ProGuard stubs landed** ✅
 
