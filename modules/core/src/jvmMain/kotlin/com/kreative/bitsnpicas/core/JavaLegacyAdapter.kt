@@ -4,6 +4,9 @@ import com.kreative.bitsnpicas.BitmapFont as JavaBitmapFont
 import com.kreative.bitsnpicas.BitmapFontGlyph as JavaBitmapFontGlyph
 import com.kreative.bitsnpicas.Font as JavaFont
 import com.kreative.bitsnpicas.exporter.BDFBitmapFontExporter
+import com.kreative.bitsnpicas.exporter.FNTBitmapFontExporter
+import com.kreative.bitsnpicas.exporter.HexBitmapFontExporter
+import com.kreative.bitsnpicas.exporter.PSFBitmapFontExporter
 import com.kreative.bitsnpicas.importer.BDFBitmapFontImporter
 import com.kreative.bitsnpicas.importer.FNTBitmapFontImporter
 import com.kreative.bitsnpicas.importer.HexBitmapFontImporter
@@ -150,20 +153,7 @@ public object JavaLegacyAdapter {
      * array as UTF-8.
      */
     public fun exportBdfViaJava(font: BitmapFont): String {
-        val jf = JavaBitmapFont()
-        // Mirror the Java setters visible on BitmapFont's public API.
-        jf.setEmAscent(font.emAscent)
-        jf.setEmDescent(font.emDescent)
-        jf.setLineAscent(font.lineAscent)
-        jf.setLineDescent(font.lineDescent)
-        jf.setXHeight(font.xHeight)
-        jf.setCapHeight(font.capHeight)
-        if (font.name != null) {
-            jf.setName(JavaFont.NAME_FAMILY, font.name)
-        }
-        for ((cp, kGlyph) in font.glyphs) {
-            jf.putCharacter(cp, toJava(kGlyph))
-        }
+        val jf = toJavaFont(font)
         val exporter = BDFBitmapFontExporter()
         val bytes = exporter.exportFontToBytes(jf)
         return String(bytes, Charsets.UTF_8)
@@ -212,6 +202,59 @@ public object JavaLegacyAdapter {
             lineGap = jf.lineGap,
             newGlyphWidth = jf.newGlyphWidth,
         )
+    }
+
+    /**
+     * Export a commonMain [BitmapFont] via the frozen Java
+     * `PSFBitmapFontExporter`. Used by the jvmTest parity gate to
+     * compare commonMain exporter output against the legacy path.
+     */
+    public fun exportPsfViaJava(font: BitmapFont): ByteArray {
+        val jf = toJavaFont(font)
+        val exporter = PSFBitmapFontExporter()
+        return exporter.exportFontToBytes(jf)
+    }
+
+    /**
+     * Export a commonMain [BitmapFont] via the frozen Java
+     * `FNTBitmapFontExporter`. Used by the jvmTest parity gate.
+     */
+    public fun exportFntViaJava(font: BitmapFont): ByteArray {
+        val jf = toJavaFont(font)
+        val exporter = FNTBitmapFontExporter()
+        return exporter.exportFontToBytes(jf)
+    }
+
+    /**
+     * Export a commonMain [BitmapFont] via the frozen Java
+     * `HexBitmapFontExporter`. Used by the jvmTest parity gate.
+     */
+    public fun exportHexViaJava(font: BitmapFont): String {
+        val jf = toJavaFont(font)
+        val exporter = HexBitmapFontExporter()
+        val bytes = exporter.exportFontToBytes(jf)
+        return String(bytes, Charsets.UTF_8)
+    }
+
+    /**
+     * Bridge a commonMain [BitmapFont] into a frozen Java `BitmapFont`,
+     * populating the fields needed for the Java exporters.
+     */
+    private fun toJavaFont(font: BitmapFont): JavaBitmapFont {
+        val jf = JavaBitmapFont()
+        jf.setEmAscent(font.emAscent)
+        jf.setEmDescent(font.emDescent)
+        jf.setLineAscent(font.lineAscent)
+        jf.setLineDescent(font.lineDescent)
+        jf.setXHeight(font.xHeight)
+        jf.setCapHeight(font.capHeight)
+        if (font.name != null) {
+            jf.setName(JavaFont.NAME_FAMILY, font.name)
+        }
+        for ((cp, kGlyph) in font.glyphs) {
+            jf.putCharacter(cp, toJava(kGlyph))
+        }
+        return jf
     }
 
     /** Compose via the frozen Java code path, returning a commonMain view. */
