@@ -124,11 +124,49 @@ and an exporter in `commonMain`:
 `modules/core/build.gradle.kts` now declares: `jvm`, `js(IR)`,
 `wasmJs`, `linuxX64`, `macosX64`, `macosArm64`, `mingwX64`.
 All compile successfully on GraalVM 25.0.2 with Kotlin 2.3.20.
-JVM tests green (169); JS/wasmJs/Native test execution deferred
+JVM tests green (238); JS/wasmJs/Native test execution deferred
 to CI (this sandbox lacks npm SSL certs for the JS test runner).
 Commit: `bebd984`.
 
-**Remaining S4 follow-ups** (not blocking S5):
+### PUAA codec system: **binary table round-trip complete** ✅
+
+`PuaaTable` + `PuaaSubtable` + 9 `PuaaEntry` variants
+(`Single`, `Multiple`, `Boolean`, `Decimal`, `Hexadecimal`,
+`HexMultiple`, `HexSequence`, `CaseMapping`, `NameAlias`) ported
+to `commonMain/puaa/` with byte-exact compile/decompile parity
+against the frozen Java. 43 tests (24 common + 19 JVM parity).
+Commit: `5b445c7`.
+
+### TTF foundation: **file envelope + head/name/post tables** ✅
+
+`TrueTypeFile` (offset table header + table directory +
+checksum adjustment + dependency-resolved decompile),
+`HeadTable`, `NameTable` + `NameTableEntry`, `PostTable` +
+`PostTableEntry`, `UnknownTable` (lossless raw-byte fallback).
+Cross-compile parity: Kotlin-compiled TTFs decompile correctly
+via frozen Java and vice versa. 26 tests. Commit: `44a6652`.
+
+### GraalVM native-image: **CLI compiles to 7.3 MB binary** ✅
+
+`nativeCompileCli` Exec task in `modules/core` invokes
+`native-image` from the SDKMAN-pinned GraalVM 25.0.2. Produces
+a standalone `font-studio-cli` binary. The GraalVM buildtools
+plugin 0.10.6 is applied but its built-in `nativeCompile` task
+doesn't register in a KMP project (requires `application`
+plugin); the manual `Exec` task works. Commit: `9797e8a`.
+
+### ProGuard: **tasks defined, blocked on Java 25 class files** ⚠
+
+`proguardRelease` (JavaExec) and `verifyProguardedJar` (Test)
+tasks are fully defined in the root `build.gradle.kts` but NOT
+wired into `check`. ProGuard 7.7.0 (proguard-core 9.1.10)
+cannot read Java 25 class files (version 69.0; max supported is
+68.x / Java 24). The ProGuard Gradle plugin also doesn't resolve
+from Plugin Portal. Unblocks when either ProGuard gains Java 25
+support or a JDK 24 toolchain is configured for the shrink step.
+Commit: `9797e8a`.
+
+**Remaining follow-ups:**
 
 - **TTF importer** — the `truetype/**` package is large (~90 table
   classes); the full port is a multi-sprint effort. The frozen Java

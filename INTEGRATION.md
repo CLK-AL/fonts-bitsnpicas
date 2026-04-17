@@ -167,7 +167,7 @@ reflect the state at `MIGRATION_PLAN.md §0.6` in each repo.
 
 | Repo | Ported in `commonMain` | Module tests | Pending |
 | --- | --- | --- | --- |
-| **fonts-bitsnpicas** *(host)* | `Glyph` interface, `BitmapGlyph`, `BitmapFont`, `ByteReader`/`ByteWriter`, **PSF / FNT / BDF / Hex importers + exporters** (all round-trips validated), `PlaydateMetadataParser` — **bitmap formats complete**; **KMP 7-target matrix** (JVM, JS, wasmJs, linuxX64, macosX64, macosArm64, mingwX64) all compile | 169 | TTF / PUAA (large; deferred to S4-TTF sprint); Playdate PNG (needs Skiko image-decode at S5) |
+| **fonts-bitsnpicas** *(host)* | `Glyph`, `BitmapGlyph`, `BitmapFont`, `ByteReader`/`ByteWriter`, **PSF/FNT/BDF/Hex importers+exporters**, `PlaydateMetadataParser`, **PUAA table** (9 entry types, binary round-trip), **TTF envelope + head/name/post tables** (`UnknownTable` fallback for ~80 remaining); KMP 7-target matrix; **GraalVM native-image CLI** (7.3 MB binary) | 238 | TTF remaining ~80 tables; PUAA text codecs; ProGuard (blocked on Java 25 class files) |
 | **banana-figlet** | `Layout`, `Option`, `Rule`, `Meta`, `FlfParser`, `FigletRenderer` (h+v), `SmushRules` (H1–6 + V1–5), `BananaFiglet` API (`bananaify`/`bananansi`), `Ansi`, `FontResourceLoader` — **library port structurally complete** ✅ | 168 | TLF zip path; JS/wasmJs/Native targets |
 | **ChatGameFontificator** | `SpriteCharacterKey`, `ConfigFont`/`ConfigMessage`/`ConfigChat`/`ConfigColor`/`ConfigCensor` (config layer complete), `baseValidation`, `SpriteFontGeometry`, `CharacterBounds`, `SpriteFontMetrics`, `ColorRGBA` — **config + geometry complete** ✅ | 186 | `Sprite` renderer (needs `Canvas2D` at S5) |
 
