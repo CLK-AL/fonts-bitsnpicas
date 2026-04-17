@@ -20,14 +20,14 @@ public object PsfImporter {
     /**
      * Exception thrown when PSF data is malformed.
      */
-    public class PsfParseException(message: String) : Exception(message)
+    public class PsfParseException(message: String) : ParseException(message)
 
     /**
      * Parse a PSF v1 or v2 font from a raw byte array.
      *
      * @throws PsfParseException on malformed / out-of-range data.
      */
-    public fun read(input: ByteArray): BitmapFont {
+    public fun read(input: ByteArray): BitmapFont = wrapParseException {
         val r = ByteReader(input)
 
         val version = readVersion(r)
@@ -180,7 +180,7 @@ public object PsfImporter {
         val guessedCh = guessCapHeight(characters)
         if (guessedCh != 0) ch = guessedCh
 
-        return BitmapFont(
+        BitmapFont(
             glyphs = characters,
             emAscent = emAscent,
             emDescent = emDescent,
@@ -191,6 +191,17 @@ public object PsfImporter {
             lineGap = 0,
             newGlyphWidth = width,
         )
+    }
+
+    /** Convert [ParseException] from shared ByteReader into [PsfParseException]. */
+    private inline fun <T> wrapParseException(block: () -> T): T {
+        try {
+            return block()
+        } catch (e: PsfParseException) {
+            throw e // already the right type
+        } catch (e: ParseException) {
+            throw PsfParseException(e.message ?: "parse error")
+        }
     }
 
     private fun toBitmapGlyph(rows: List<IntArray>, width: Int, height: Int): BitmapGlyph {
@@ -306,69 +317,7 @@ public object PsfImporter {
         return result
     }
 
-    // ---- Byte-level helpers (Kotlin stdlib only, no java.io) ------------
-
-    /**
-     * Minimal sequential byte reader over a ByteArray.
-     * Tracks position; throws PsfParseException on underflow.
-     */
-    internal class ByteReader(private val data: ByteArray) {
-        var pos: Int = 0
-            private set
-
-        val remaining: Int get() = data.size - pos
-
-        fun readU8(): Int {
-            if (pos >= data.size) throw PsfParseException("unexpected end of data at offset $pos")
-            return data[pos++].toInt() and 0xFF
-        }
-
-        /** Read 16-bit unsigned, big-endian (matches DataInputStream.readUnsignedShort). */
-        fun readU16BE(): Int {
-            val hi = readU8()
-            val lo = readU8()
-            return (hi shl 8) or lo
-        }
-
-        /** Read 16-bit unsigned, little-endian. */
-        fun readU16LE(): Int {
-            val lo = readU8()
-            val hi = readU8()
-            return (hi shl 8) or lo
-        }
-
-        /** Read 32-bit signed, big-endian (matches DataInputStream.readInt). */
-        fun readIntBE(): Int {
-            val b3 = readU8()
-            val b2 = readU8()
-            val b1 = readU8()
-            val b0 = readU8()
-            return (b3 shl 24) or (b2 shl 16) or (b1 shl 8) or b0
-        }
-
-        /** Read 32-bit signed, little-endian. */
-        fun readIntLE(): Int {
-            val b0 = readU8()
-            val b1 = readU8()
-            val b2 = readU8()
-            val b3 = readU8()
-            return (b3 shl 24) or (b2 shl 16) or (b1 shl 8) or b0
-        }
-
-        fun readBytes(count: Int): ByteArray {
-            if (pos + count > data.size)
-                throw PsfParseException("unexpected end of data: need $count bytes at offset $pos, have ${data.size - pos}")
-            val result = data.copyOfRange(pos, pos + count)
-            pos += count
-            return result
-        }
-
-        fun skip(count: Int) {
-            if (pos + count > data.size)
-                throw PsfParseException("unexpected end of data: cannot skip $count bytes at offset $pos")
-            pos += count
-        }
-    }
+    // ByteReader is now in ByteReader.kt (shared with FntImporter).
 }
 
 // Kotlin/Common equivalent of Java's Character.toChars / codePointAt / charCount / codePointCount
