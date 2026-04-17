@@ -33,6 +33,12 @@ public class ByteReader(private val data: ByteArray) {
         return (hi shl 8) or lo
     }
 
+    /** Read 16-bit signed, big-endian (matches DataInputStream.readShort). */
+    public fun readI16BE(): Int {
+        val v = readU16BE()
+        return if (v >= 0x8000) v - 0x10000 else v
+    }
+
     /** Read 16-bit unsigned, little-endian. */
     public fun readU16LE(): Int {
         val lo = readU8()
@@ -47,6 +53,13 @@ public class ByteReader(private val data: ByteArray) {
         val b1 = readU8()
         val b0 = readU8()
         return (b3 shl 24) or (b2 shl 16) or (b1 shl 8) or b0
+    }
+
+    /** Read 64-bit signed, big-endian (matches DataInputStream.readLong). */
+    public fun readLongBE(): Long {
+        val hi = readIntBE().toLong() and 0xFFFFFFFFL
+        val lo = readIntBE().toLong() and 0xFFFFFFFFL
+        return (hi shl 32) or lo
     }
 
     /** Read 32-bit signed, little-endian. */
@@ -76,6 +89,13 @@ public class ByteReader(private val data: ByteArray) {
         if (pos + count > data.size)
             throw ParseException("unexpected end of data: cannot skip $count bytes at offset $pos")
         pos += count
+    }
+
+    /** Seek to an absolute position in the data. */
+    public fun seek(offset: Int) {
+        if (offset < 0 || offset > data.size)
+            throw ParseException("seek offset $offset out of bounds (size=${data.size})")
+        pos = offset
     }
 }
 

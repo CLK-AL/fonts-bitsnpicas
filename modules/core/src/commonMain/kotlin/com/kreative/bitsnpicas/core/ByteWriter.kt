@@ -37,6 +37,11 @@ public class ByteWriter(initialCapacity: Int = 256) {
         buf[pos++] = ((value shr 8) and 0xFF).toByte()
     }
 
+    /** Write 16 bits big-endian, signed (same wire format as unsigned). */
+    public fun writeI16BE(value: Int) {
+        writeU16BE(value and 0xFFFF)
+    }
+
     /** Write 32 bits big-endian. */
     public fun writeIntBE(value: Int) {
         ensureCapacity(4)
@@ -44,6 +49,12 @@ public class ByteWriter(initialCapacity: Int = 256) {
         buf[pos++] = ((value shr 16) and 0xFF).toByte()
         buf[pos++] = ((value shr 8) and 0xFF).toByte()
         buf[pos++] = (value and 0xFF).toByte()
+    }
+
+    /** Write 64 bits big-endian. */
+    public fun writeLongBE(value: Long) {
+        writeIntBE((value shr 32).toInt())
+        writeIntBE(value.toInt())
     }
 
     /** Write 32 bits little-endian. */
