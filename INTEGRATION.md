@@ -167,11 +167,11 @@ reflect the state at `MIGRATION_PLAN.md §0.6` in each repo.
 
 | Repo | Ported in `commonMain` | Module tests | Pending |
 | --- | --- | --- | --- |
-| **fonts-bitsnpicas** *(host)* | `Glyph` interface, `BitmapGlyph` (compose + contract), `BitmapFont`, shared `ByteReader`, **PSF / FNT / BDF / Hex importers**, `BdfExporter`, `PlaydateMetadataParser` | 138 | TTF / PUAA importers + remaining exporters |
-| **banana-figlet** | `Layout`, `Option`, `Rule`, `Meta`, `FlfParser`, `FigletRenderer` (h+v complete), `SmushRules` (H1–6 + V1–5), **`BananaFiglet` top-level API** (`bananaify` + `bananansi`), `Ansi`, `FontResourceLoader` (expect/actual) — **library port structurally complete** | 168 | JS/wasmJs/Native target enablement (JVM-only today) |
-| **ChatGameFontificator** | `SpriteCharacterKey`, **`ConfigFont` / `ConfigMessage` / `ConfigChat` / `ConfigColor` / `ConfigCensor`** (config layer complete), `baseValidation`, `SpriteFontGeometry`, `CharacterBounds`, `SpriteFontMetrics`, `ColorRGBA` | 186 | `Sprite` color cache, chat-preview renderer |
+| **fonts-bitsnpicas** *(host)* | `Glyph` interface, `BitmapGlyph`, `BitmapFont`, `ByteReader`/`ByteWriter`, **PSF / FNT / BDF / Hex importers + exporters** (all round-trips validated), `PlaydateMetadataParser` — **bitmap formats complete** | 169 | TTF / PUAA (large; deferred to S4-TTF sprint); Playdate PNG (needs Skiko image-decode at S5) |
+| **banana-figlet** | `Layout`, `Option`, `Rule`, `Meta`, `FlfParser`, `FigletRenderer` (h+v), `SmushRules` (H1–6 + V1–5), `BananaFiglet` API (`bananaify`/`bananansi`), `Ansi`, `FontResourceLoader` — **library port structurally complete** ✅ | 168 | TLF zip path; JS/wasmJs/Native targets |
+| **ChatGameFontificator** | `SpriteCharacterKey`, `ConfigFont`/`ConfigMessage`/`ConfigChat`/`ConfigColor`/`ConfigCensor` (config layer complete), `baseValidation`, `SpriteFontGeometry`, `CharacterBounds`, `SpriteFontMetrics`, `ColorRGBA` — **config + geometry complete** ✅ | 186 | `Sprite` renderer (needs `Canvas2D` at S5) |
 
-**492 module tests** total across the three repos, all green, all
+**523 module tests** total across the three repos, all green, all
 gated by differential parity against the frozen-Java `legacy-v1`.
 
 **Divergences from Java explicitly pinned in tests** (commonMain

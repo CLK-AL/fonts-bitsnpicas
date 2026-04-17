@@ -87,6 +87,7 @@ imports in commonMain.
 | R4 | `c1e085e` | `BDFBitmapFontImporter` | `BdfImporter.read(String) / readWithWarnings` | 87 | 6 byte-exact |
 | R5 | `83194fb` | `BDFBitmapFontExporter` — **fixes M7** perf (iterate `font.glyphs`, not `0..0x110000`) | `BdfExporter.write(BitmapFont): String`; BDF import/export round-trip validated | 104 | 4 byte-exact semantic (re-parse both outputs, assert parsed equality — whitespace / canonical-XLFD differences are absorbed) |
 | R6 | `deaf8f7` | `HexImporter` + `PlaydateMetadataParser` | `HexImporter.read(String)`: line-by-line hex font parser (carries **m11** div-by-zero guard). `PlaydateMetadataParser.parse(String)` + `PlaydateMetadata` data class (text metadata only; PNG decoding stays JVM-side). | 138 | 6 byte-exact (Hex); Playdate JVM parity deferred (needs PNG loader) |
+| R7 | `85f1fff` | **PSF + FNT + Hex exporters — completes all bitmap round-trips** | `PsfExporter.write(BitmapFont): ByteArray` (PSFv2 binary), `FntExporter.write(BitmapFont): ByteArray` (FNT v2 binary), `HexExporter.write(BitmapFont): String`, shared `ByteWriter` utility. Round-trip tests for all three formats + JVM semantic parity. | 169 | Hex: double-round-trip fixed point. PSF: semantic equality (Java emits 256 GlyphList entries; Kotlin emits only populated codepoints — both re-import identically for actual glyphs). FNT: codepoints + pixels + metrics all survive; double-round-trip stable. |
 
 Fixes carried natively by the Kotlin ports:
 
@@ -98,6 +99,41 @@ Fixes carried natively by the Kotlin ports:
   warnings instead of stderr println; no silent `U+FFFD` coercion.
 
 - **m11** — Hex importer: guard `height <= 0` before division.
+- **M7** — BDF exporter: iterate `font.glyphs`, not `0..0x110000`.
+
+All fixes pinned by the commonMain tests + re-verified against the
+frozen Java via the jvmTest differential-parity gate.
+
+### S4 completion status: **BITMAP FORMATS COMPLETE** ✅
+
+After R7 (`85f1fff`), every bitmap font format has both an importer
+and an exporter in `commonMain`:
+
+| Format | Importer | Exporter | Round-trip |
+| --- | --- | --- | --- |
+| PSF (v1/v2) | `PsfImporter` | `PsfExporter` | ✅ |
+| FNT (Windows) | `FntImporter` | `FntExporter` | ✅ |
+| BDF (text) | `BdfImporter` | `BdfExporter` | ✅ |
+| Hex (text) | `HexImporter` | `HexExporter` | ✅ |
+| Playdate (.fnt) | `PlaydateMetadataParser` (text only) | — | partial (PNG stays JVM) |
+
+**169 module tests**, all gated by round-trip + JVM parity.
+
+**Remaining S4 follow-ups** (not blocking S5):
+
+- **TTF importer** — the `truetype/**` package is large (~90 table
+  classes); the full port is a multi-sprint effort. The frozen Java
+  `TrueTypeFile.decompile/compile` logic is the foundation for the
+  `Glyph.vectorize` API (INTEGRATION.md §7.5). Recommend deferring
+  to a dedicated S4-TTF sprint after the Compose UI work unblocks
+  the visual pipeline.
+- **PUAA importer/exporter** — medium-size codec registry; the
+  round-trip pattern is proven and the coverage tests (S2b) already
+  exist. Can be ported opportunistically.
+- **Playdate PNG integration** — needs a `PngDecoder` expect/actual;
+  deferred to S5 when Skiko provides the image-decode surface.
+
+**Next milestone**: Stage S5 (Compose Desktop `UiDriver` actual).
 
 ---
 
