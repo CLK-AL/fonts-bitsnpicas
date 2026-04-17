@@ -59,10 +59,10 @@ logic port and the UI parity oracle.
 | S1 | **Red-then-green Critical fixes** (✅ complete) | Per `CODE_REVIEW.md` Critical finding: Kotlin red test + Java fix commit pair; CI profile=java green. | `UiDriver` **expect** scaffolded in `modules/ui-shared/commonTest`. No actuals yet. |
 | S2 | **Phase B coverage drive** (**next**) | JaCoCo 100 % line + branch on the Option-C in-migration packages (see §5). Remaining Majors / Minors from `CODE_REVIEW.md` closed. | **Swing `actual` lands**: drives `UiDriver` via `BufferedImage` + `Graphics2D` + AssertJ-Swing. Expected ARGB hashes captured and committed under `testdata/snapshots/swing/**`. Swing becomes the **pinning oracle**. |
 | S3 | **Freeze** — tag `legacy-v1` | CODEOWNERS read-only on `main/java/BitsNPicas/src/**`; CI diff-check guard. | Swing `actual` hashes frozen. Any future PR that renames or re-renders a glyph must explicitly bump the snapshot. |
-| S4 | **Phase D** — port logic to `commonMain` | One subsystem per PR: `commonMain` Kotlin + `KotlinFontIo` actual. Same Kotlin tests run twice (frozen Java + Kotlin), byte-exact differential parity on `testdata/`. Kover 100 % + Pitest ≥ 85 % per ported module. | Swing `actual` still the only UI. `UiDriver`-driven tests keep passing against the Swing renderer regardless of the logic swap underneath. |
-| S5 | **Phase E.1** — Compose Desktop UI | `ui-compose-desktop` host + Compose composables in `ui-shared`. `ComposeDesktopUiDriver` `actual` lands. | **Green renderer joins the matrix.** Every `UiDriver` test runs under both Swing (blue) and Compose Desktop (green) ARGB-hash-equal; divergence fails CI. Same fixtures, same expected hashes. |
-| S6 | **Phase E.2** — Compose for Web (wasmJs) | `ui-compose-html` host. `ComposeWebUiDriver` `actual` lands (Compose test-renderer + Playwright Kotlin nightly ARGB grab). | Web joins the matrix. Three renderers, one suite, one set of hashes. |
-| S7 | **Phase F** — Dual CI/CD release | `profile=java` publishes ProGuarded `*-legacy` JAR. `profile=kmp` publishes core klibs (JVM/JS/wasmJs/Native), Compose Desktop signed bundle (native-image via `org.graalvm.buildtools.native` 0.10.6), Compose Web static site. `verifyProguardedJar` gates both. | Swing `actual` retained through S7 for cross-check. Deleted only after N consecutive tagged releases pass the full parity matrix. |
+| S4 | **Phase D** (✅ bitmap formats complete) — port logic to `commonMain` | One subsystem per PR: `commonMain` Kotlin + `KotlinFontIo` actual. Same Kotlin tests run twice (frozen Java + Kotlin), byte-exact differential parity on `testdata/`. Kover 100 % + Pitest ≥ 85 % per ported module. | Swing `actual` still the only UI. `UiDriver`-driven tests keep passing against the Swing renderer regardless of the logic swap underneath. |
+| S5 | **Phase E.1** (✅ scaffolded; Swing oracle green) — Compose Desktop UI | `ui-compose-desktop` host + Compose composables in `ui-shared`. `ComposeDesktopUiDriver` `actual` lands. | **Green renderer joins the matrix.** Every `UiDriver` test runs under both Swing (blue) and Compose Desktop (green) ARGB-hash-equal; divergence fails CI. Same fixtures, same expected hashes. |
+| S6 | **Phase E.2** (✅ scaffolded; stub actual) — Compose for Web (wasmJs) | `ui-compose-html` host. `ComposeWebUiDriver` `actual` lands (Compose test-renderer + Playwright Kotlin nightly ARGB grab). | Web joins the matrix. Three renderers, one suite, one set of hashes. |
+| S7 | **Phase F** (✅ CI workflows + ProGuard stubs) — Dual CI/CD release | `profile=java` publishes ProGuarded `*-legacy` JAR. `profile=kmp` publishes core klibs (JVM/JS/wasmJs/Native), Compose Desktop signed bundle (native-image via `org.graalvm.buildtools.native` 0.10.6), Compose Web static site. `verifyProguardedJar` gates both. | Swing `actual` retained through S7 for cross-check. Deleted only after N consecutive tagged releases pass the full parity matrix. |
 
 UI migration in plain terms: **Swing stays as the test oracle
 through every stage from S2 onward; Compose implementations prove
@@ -134,6 +134,42 @@ and an exporter in `commonMain`:
   deferred to S5 when Skiko provides the image-decode surface.
 
 **Next milestone**: Stage S5 (Compose Desktop `UiDriver` actual).
+
+### S5 progress: **UiDriver infrastructure landed** ✅
+
+| Module | Status | Tests |
+| --- | --- | --- |
+| `modules/ui-shared` | `expect class UiDriver` + `ArgbBitmap` (with SHA-256) in commonMain; AWT `BufferedImage` actual in jvmMain (headless-safe) | 3 parity tests green |
+| `modules/ui-swing` | Blue oracle test module exercising the Swing actual | 5 tests green (dimension, SHA stability, alpha, scaling, multi-glyph) |
+| `modules/ui-compose-desktop` | Stub — Compose MP 1.8.2 deps disabled (JetBrains Space 503 on `androidx.lifecycle`); re-enable when repo stabilises | Compiles, no tests |
+| `modules/ui-compose-html` | Stub — wasmJs target deferred (same repo issue) | Compiles, no tests |
+
+Commits: `2d3ce7d`, `7f723e9`, `b33156b`.
+
+The Swing actual renders `BitmapGlyph` bitmaps pixel-by-pixel
+into off-screen `BufferedImage(TYPE_INT_ARGB)`, fully headless.
+ARGB hashes captured here become the pinning oracle at S3 freeze
+for every future renderer (Compose Desktop at S5 full, Compose
+Web at S6).
+
+### S6 progress: **scaffold landed** (stub)
+
+`modules/ui-compose-html` compiles as a Kotlin/JVM placeholder.
+wasmJs target activation and real Compose Web rendering deferred
+to when the JetBrains Space Maven repo stabilises.
+
+### S7 progress: **dual CI workflows + ProGuard stubs landed** ✅
+
+| File | Purpose |
+| --- | --- |
+| `.github/workflows/java.yml` | Legacy profile: SDKMAN env → `./gradlew test jacocoTestReport jacocoTestCoverageVerification` on {ubuntu, macos, windows} |
+| `.github/workflows/kmp.yml` | KMP profile: SDKMAN env → `./gradlew :modules:core:check` on {ubuntu, macos, windows} |
+| `proguard/proguard-rules-common.pro` | Kotlin metadata, kotlinx, annotations |
+| `proguard/proguard-rules-java.pro` | Legacy main classes (`edit.Main`, `keyedit.Main`, `mapedit.Main`) |
+| `proguard/proguard-rules-kmp.pro` | `com.kreative.bitsnpicas.core.**` |
+| `proguard/proguard-rules-ui.pro` | Compose Desktop + Skiko placeholder |
+
+Commit: `50193f7`.
 
 ---
 

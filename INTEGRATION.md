@@ -171,8 +171,26 @@ reflect the state at `MIGRATION_PLAN.md §0.6` in each repo.
 | **banana-figlet** | `Layout`, `Option`, `Rule`, `Meta`, `FlfParser`, `FigletRenderer` (h+v), `SmushRules` (H1–6 + V1–5), `BananaFiglet` API (`bananaify`/`bananansi`), `Ansi`, `FontResourceLoader` — **library port structurally complete** ✅ | 168 | TLF zip path; JS/wasmJs/Native targets |
 | **ChatGameFontificator** | `SpriteCharacterKey`, `ConfigFont`/`ConfigMessage`/`ConfigChat`/`ConfigColor`/`ConfigCensor` (config layer complete), `baseValidation`, `SpriteFontGeometry`, `CharacterBounds`, `SpriteFontMetrics`, `ColorRGBA` — **config + geometry complete** ✅ | 186 | `Sprite` renderer (needs `Canvas2D` at S5) |
 
-**523 module tests** total across the three repos, all green, all
-gated by differential parity against the frozen-Java `legacy-v1`.
+**531 module tests** total across the three repos (169 core + 8 UI
+= 177 fonts-bitsnpicas; 168 banana-figlet; 186 ChatGameFontificator),
+all green, all gated by differential parity against frozen `legacy-v1`.
+
+### S5 UiDriver infrastructure (fonts-bitsnpicas host only)
+
+`modules/ui-shared` provides the `expect class UiDriver` +
+`ArgbBitmap` (with platform-neutral SHA-256 hashing).
+`modules/ui-swing` exercises the Swing actual (headless
+`BufferedImage` pixel rendering). `modules/ui-compose-desktop`
+and `modules/ui-compose-html` are stub actuals pending the
+JetBrains Space Maven repo stabilisation for Compose MP 1.8.2
+transitive deps.
+
+### S7 dual CI/CD (all repos)
+
+`.github/workflows/java.yml` (legacy profile, 3-OS matrix) and
+`kmp.yml` (KMP modules, 3-OS matrix) landed in all three repos.
+`proguard/*.pro` stubs (common + java + kmp, per-repo adapted)
+ready for wiring once the ProGuard Gradle plugin is applied.
 
 **Divergences from Java explicitly pinned in tests** (commonMain
 is *more correct* than Java for these):
