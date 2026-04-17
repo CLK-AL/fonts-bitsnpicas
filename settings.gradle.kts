@@ -7,7 +7,10 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // PREFER_SETTINGS instead of FAIL_ON_PROJECT because the Kotlin/JS
+    // plugin adds its own Node.js distribution repo at https://nodejs.org/dist
+    // which can't be declared in settings.
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         mavenCentral()
         gradlePluginPortal()

@@ -19,6 +19,18 @@ kotlin {
             }
         }
     }
+    js(IR) {
+        browser()
+        nodejs()
+    }
+    wasmJs {
+        browser()
+    }
+    // Native targets — desktop tier
+    linuxX64()
+    macosX64()
+    macosArm64()
+    mingwX64()
 
     sourceSets {
         val commonMain by getting
@@ -47,5 +59,13 @@ tasks.withType<Test>().configureEach {
     useJUnitPlatform()
     testLogging {
         events("passed", "failed", "skipped")
+    }
+}
+
+// Use system-installed Node.js instead of downloading via Gradle.
+// Kotlin 2.3 moved the NodeJs config to the new plugin API.
+rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin> {
+    rootProject.extensions.getByType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().apply {
+        download.set(false)
     }
 }

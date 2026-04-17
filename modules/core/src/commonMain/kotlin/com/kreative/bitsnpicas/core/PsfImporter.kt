@@ -307,7 +307,7 @@ public object PsfImporter {
         var i = 0
         while (i < first.length) {
             val cp = first.codePointAt(i)
-            result.add(String(Character.toChars(cp)))
+            result.add(Character.toChars(cp).concatToString())
             i += Character.charCount(cp)
         }
         // Remaining pieces are multi-codepoint sequences
