@@ -85,7 +85,7 @@ imports in commonMain.
 | R2 | `beb205f` | `PSFBitmapFontImporter` | `BitmapFont`, `ByteReader` *(later extracted)*, `PsfImporter.read(ByteArray)` | 41 | 9 byte-exact |
 | R3 | `03bf542` + `b307550` | `FNTBitmapFontImporter` | Shared `ByteReader`, `FntImporter.read(ByteArray)` | 65 | 6 byte-exact |
 | R4 | `c1e085e` | `BDFBitmapFontImporter` | `BdfImporter.read(String) / readWithWarnings` | 87 | 6 byte-exact |
-| R5 | *(in flight)* | `BDFBitmapFontExporter` — carries **M7** fix (iterate `font.glyphs`, not `0..0x110000`) | `BdfExporter.write`; BDF import/export round-trip | pending | pending |
+| R5 | `83194fb` | `BDFBitmapFontExporter` — **fixes M7** perf (iterate `font.glyphs`, not `0..0x110000`) | `BdfExporter.write(BitmapFont): String`; BDF import/export round-trip validated | 104 | 4 byte-exact semantic (re-parse both outputs, assert parsed equality — whitespace / canonical-XLFD differences are absorbed) |
 
 Fixes carried natively by the Kotlin ports:
 
