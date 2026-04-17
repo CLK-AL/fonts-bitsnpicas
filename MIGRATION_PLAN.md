@@ -119,6 +119,15 @@ and an exporter in `commonMain`:
 
 **169 module tests**, all gated by round-trip + JVM parity.
 
+### KMP target matrix: **all 7 targets compile** ✅
+
+`modules/core/build.gradle.kts` now declares: `jvm`, `js(IR)`,
+`wasmJs`, `linuxX64`, `macosX64`, `macosArm64`, `mingwX64`.
+All compile successfully on GraalVM 25.0.2 with Kotlin 2.3.20.
+JVM tests green (169); JS/wasmJs/Native test execution deferred
+to CI (this sandbox lacks npm SSL certs for the JS test runner).
+Commit: `bebd984`.
+
 **Remaining S4 follow-ups** (not blocking S5):
 
 - **TTF importer** — the `truetype/**` package is large (~90 table
