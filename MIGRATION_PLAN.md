@@ -70,6 +70,37 @@ themselves against it on every PR.** No flag-day cut-over.
 
 ---
 
+## 0.6 S4 port progress log
+
+Stage S4 ports land under `modules/core/` with a
+commonMain port + a `jvmMain` `JavaLegacyAdapter` + a jvmTest
+differential-parity gate against the frozen Java. Each round
+stacks incrementally; all rounds keep `./gradlew :modules:core:check`
+green and `./gradlew test` (legacy profile) green. Zero `java.*`
+imports in commonMain.
+
+| Round | SHA | Port | commonMain surface added | Tests (module) | Parity |
+| --- | --- | --- | --- | --- | --- |
+| R1 | `fafd0fe` + `1c51930` | `BitmapFontGlyph.compose` | `Glyph` interface, `BitmapGlyph` (compose+contract) | 15 | 6 byte-exact |
+| R2 | `beb205f` | `PSFBitmapFontImporter` | `BitmapFont`, `ByteReader` *(later extracted)*, `PsfImporter.read(ByteArray)` | 41 | 9 byte-exact |
+| R3 | `03bf542` + `b307550` | `FNTBitmapFontImporter` | Shared `ByteReader`, `FntImporter.read(ByteArray)` | 65 | 6 byte-exact |
+| R4 | `c1e085e` | `BDFBitmapFontImporter` | `BdfImporter.read(String) / readWithWarnings` | 87 | 6 byte-exact |
+| R5 | *(in flight)* | `BDFBitmapFontExporter` — carries **M7** fix (iterate `font.glyphs`, not `0..0x110000`) | `BdfExporter.write`; BDF import/export round-trip | pending | pending |
+
+Fixes carried natively by the Kotlin ports:
+
+- **C1, C3** — PSF importer: header-derived bounds + OOM caps.
+- **C2** — FNT importer: `dx` bounds-check before array access.
+- **C4** — BDF importer: no stream to leak (takes `String`).
+- **C5** — `BitmapGlyph.compose`: strict < zero-dim guard + null row skip.
+- **M8, M9** — BDF importer: unknown charsets surface as typed
+  warnings instead of stderr println; no silent `U+FFFD` coercion.
+
+All fixes pinned by the commonMain tests + re-verified against the
+frozen Java via the jvmTest differential-parity gate.
+
+---
+
 ## 1. Toolchain — SDKMAN + Gradle version catalog
 
 The previous iteration of this section used older placeholders

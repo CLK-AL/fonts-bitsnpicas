@@ -159,6 +159,36 @@ of `modules/` so `settings.gradle.kts` registration is a single
 
 ---
 
+## 3.5 Current S4 port surface (live)
+
+Each subsystem listed below is ported to `commonMain` with a
+`JavaLegacyAdapter` + jvmTest differential-parity gate. Numbers
+reflect the state at `MIGRATION_PLAN.md §0.6` in each repo.
+
+| Repo | Ported in `commonMain` | Module tests | Pending |
+| --- | --- | --- | --- |
+| **fonts-bitsnpicas** *(host)* | `Glyph` interface, `BitmapGlyph` (compose + contract), `BitmapFont`, shared `ByteReader`, `PsfImporter`, `FntImporter`, `BdfImporter` + `readWithWarnings` | 87 | BDF exporter (in flight), Hex / Playdate / TTF / PUAA importers + exporters |
+| **banana-figlet** | `Layout`, `Option`, `Rule`, `Meta`, `FlfParser`, `FigletRenderer.generateLine`, horizontal `SmushRules` (H1–H6 + `smushUniversal` + §17.5 fix) | 115 | vertical smushing (in flight) |
+| **ChatGameFontificator** | `SpriteCharacterKey`, `ConfigFont`, `baseValidation`, `SpriteFontGeometry`, `CharacterBounds`, `SpriteFontMetrics` | 93 | `ConfigMessage` (in flight), `Sprite` color cache, chat-preview renderer |
+
+**295 module tests** total across the three repos, all green, all
+gated by differential parity against the frozen-Java `legacy-v1`.
+
+**Divergences from Java explicitly pinned in tests** (commonMain
+is *more correct* than Java for these):
+
+- banana-figlet **§17.5** — `smushHorizontalRule5 \/ → Y` dead
+  branch fixed via explicit pair matching in commonMain; Java
+  retains the `indexOf`-based dispatch per the frozen-v1 contract.
+- ChatGameFontificator **M4** — `SpriteCharacterKey.isBadge` uses
+  `&&` in commonMain; Java still has the bitwise `&` (same boolean
+  result in this case, but shorter-circuit correct in Kotlin).
+
+Both are documented in each repo's `CODE_REVIEW.md` and pinned
+in the parity test suite with assertion rationale.
+
+---
+
 ## 4. Low-level class review
 
 Diagram source: [`docs/diagrams/01-core-api.puml`](docs/diagrams/01-core-api.puml).
