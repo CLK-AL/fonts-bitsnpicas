@@ -257,17 +257,30 @@ val verifyProguardedJar by tasks.registering(Test::class) {
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
 
-    // Use the same test classes as the main test task
+    // Use the same test classes as the main test task.
     testClassesDirs = sourceSets.test.get().output.classesDirs
 
-    // Replace the normal runtime classpath: swap the project classes for the shrunk JAR
+    // Build the classpath: shrunk JAR first, then the *normal* full test
+    // runtime classpath (which includes test classes, production classes,
+    // and all external dependencies like JUnit, kotlin-test, etc.).
+    //
+    // Why keep the original production classes?  ProGuard shrinks away
+    // classes unreachable from the configured entry points. Some test
+    // classes reference production classes (e.g. BitmapFontExporter) that
+    // ProGuard removed. Without the originals as a fallback, JUnit test
+    // discovery fails with NoClassDefFoundError.
+    //
+    // By placing the shrunk JAR first on the classpath, any class present
+    // in both the shrunk JAR and the original classes dir will be loaded
+    // from the shrunk JAR — which is what we want to verify.
     val shrunkJar = proguardRelease.map {
         val name = tasks.jar.get().archiveBaseName.get() + "-legacy-shrunk.jar"
         File(layout.buildDirectory.dir("libs").get().asFile, name)
     }
-    classpath = files(shrunkJar) +
-        sourceSets.test.get().output.classesDirs +
-        configurations.named("testRuntimeClasspath").get()
+
+    // sourceSets.test.get().runtimeClasspath is the full test classpath:
+    //   testClassesDirs + main output (classes + resources) + testRuntimeClasspath
+    classpath = files(shrunkJar) + sourceSets.test.get().runtimeClasspath
 }
 // NOTE: proguardRelease and verifyProguardedJar are NOT wired into `check`
 // due to the JDK 25 / ProGuard 7.7.0 incompatibility documented above.
