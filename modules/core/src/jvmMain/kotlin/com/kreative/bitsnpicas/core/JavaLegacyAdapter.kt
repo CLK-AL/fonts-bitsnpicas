@@ -3,6 +3,7 @@ package com.kreative.bitsnpicas.core
 import com.kreative.bitsnpicas.BitmapFont as JavaBitmapFont
 import com.kreative.bitsnpicas.BitmapFontGlyph as JavaBitmapFontGlyph
 import com.kreative.bitsnpicas.Font as JavaFont
+import com.kreative.bitsnpicas.exporter.BDFBitmapFontExporter
 import com.kreative.bitsnpicas.importer.BDFBitmapFontImporter
 import com.kreative.bitsnpicas.importer.FNTBitmapFontImporter
 import com.kreative.bitsnpicas.importer.PSFBitmapFontImporter
@@ -134,6 +135,37 @@ public object JavaLegacyAdapter {
             newGlyphWidth = jf.newGlyphWidth,
             name = jf.getName(JavaFont.NAME_FAMILY),
         )
+    }
+
+    /**
+     * Export a commonMain [BitmapFont] via the frozen Java
+     * `BDFBitmapFontExporter`. Used by the jvmTest parity gate to
+     * compare commonMain exporter output against the legacy path.
+     *
+     * This adapter bridges commonMain -> Java: it reconstructs a Java
+     * `BitmapFont` from the commonMain model, populating just enough
+     * state for the Java exporter to run (font metrics + per-codepoint
+     * glyphs). BDF output is ASCII-safe, so we decode the Java byte
+     * array as UTF-8.
+     */
+    public fun exportBdfViaJava(font: BitmapFont): String {
+        val jf = JavaBitmapFont()
+        // Mirror the Java setters visible on BitmapFont's public API.
+        jf.setEmAscent(font.emAscent)
+        jf.setEmDescent(font.emDescent)
+        jf.setLineAscent(font.lineAscent)
+        jf.setLineDescent(font.lineDescent)
+        jf.setXHeight(font.xHeight)
+        jf.setCapHeight(font.capHeight)
+        if (font.name != null) {
+            jf.setName(JavaFont.NAME_FAMILY, font.name)
+        }
+        for ((cp, kGlyph) in font.glyphs) {
+            jf.putCharacter(cp, toJava(kGlyph))
+        }
+        val exporter = BDFBitmapFontExporter()
+        val bytes = exporter.exportFontToBytes(jf)
+        return String(bytes, Charsets.UTF_8)
     }
 
     /** Compose via the frozen Java code path, returning a commonMain view. */
