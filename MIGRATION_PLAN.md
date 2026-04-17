@@ -86,6 +86,7 @@ imports in commonMain.
 | R3 | `03bf542` + `b307550` | `FNTBitmapFontImporter` | Shared `ByteReader`, `FntImporter.read(ByteArray)` | 65 | 6 byte-exact |
 | R4 | `c1e085e` | `BDFBitmapFontImporter` | `BdfImporter.read(String) / readWithWarnings` | 87 | 6 byte-exact |
 | R5 | `83194fb` | `BDFBitmapFontExporter` — **fixes M7** perf (iterate `font.glyphs`, not `0..0x110000`) | `BdfExporter.write(BitmapFont): String`; BDF import/export round-trip validated | 104 | 4 byte-exact semantic (re-parse both outputs, assert parsed equality — whitespace / canonical-XLFD differences are absorbed) |
+| R6 | `deaf8f7` | `HexImporter` + `PlaydateMetadataParser` | `HexImporter.read(String)`: line-by-line hex font parser (carries **m11** div-by-zero guard). `PlaydateMetadataParser.parse(String)` + `PlaydateMetadata` data class (text metadata only; PNG decoding stays JVM-side). | 138 | 6 byte-exact (Hex); Playdate JVM parity deferred (needs PNG loader) |
 
 Fixes carried natively by the Kotlin ports:
 
@@ -96,8 +97,7 @@ Fixes carried natively by the Kotlin ports:
 - **M8, M9** — BDF importer: unknown charsets surface as typed
   warnings instead of stderr println; no silent `U+FFFD` coercion.
 
-All fixes pinned by the commonMain tests + re-verified against the
-frozen Java via the jvmTest differential-parity gate.
+- **m11** — Hex importer: guard `height <= 0` before division.
 
 ---
 

@@ -167,11 +167,11 @@ reflect the state at `MIGRATION_PLAN.md §0.6` in each repo.
 
 | Repo | Ported in `commonMain` | Module tests | Pending |
 | --- | --- | --- | --- |
-| **fonts-bitsnpicas** *(host)* | `Glyph` interface, `BitmapGlyph` (compose + contract), `BitmapFont`, shared `ByteReader`, `PsfImporter`, `FntImporter`, `BdfImporter` + `readWithWarnings` | 87 | BDF exporter (in flight), Hex / Playdate / TTF / PUAA importers + exporters |
-| **banana-figlet** | `Layout`, `Option`, `Rule`, `Meta`, `FlfParser`, `FigletRenderer.generateLine`, horizontal `SmushRules` (H1–H6 + `smushUniversal` + §17.5 fix) | 115 | vertical smushing (in flight) |
-| **ChatGameFontificator** | `SpriteCharacterKey`, `ConfigFont`, `baseValidation`, `SpriteFontGeometry`, `CharacterBounds`, `SpriteFontMetrics` | 93 | `ConfigMessage` (in flight), `Sprite` color cache, chat-preview renderer |
+| **fonts-bitsnpicas** *(host)* | `Glyph` interface, `BitmapGlyph` (compose + contract), `BitmapFont`, shared `ByteReader`, **PSF / FNT / BDF / Hex importers**, `BdfExporter`, `PlaydateMetadataParser` | 138 | TTF / PUAA importers + remaining exporters |
+| **banana-figlet** | `Layout`, `Option`, `Rule`, `Meta`, `FlfParser`, `FigletRenderer` (h+v complete), `SmushRules` (H1–6 + V1–5), **`BananaFiglet` top-level API** (`bananaify` + `bananansi`), `Ansi`, `FontResourceLoader` (expect/actual) — **library port structurally complete** | 168 | JS/wasmJs/Native target enablement (JVM-only today) |
+| **ChatGameFontificator** | `SpriteCharacterKey`, **`ConfigFont` / `ConfigMessage` / `ConfigChat` / `ConfigColor` / `ConfigCensor`** (config layer complete), `baseValidation`, `SpriteFontGeometry`, `CharacterBounds`, `SpriteFontMetrics`, `ColorRGBA` | 186 | `Sprite` color cache, chat-preview renderer |
 
-**295 module tests** total across the three repos, all green, all
+**492 module tests** total across the three repos, all green, all
 gated by differential parity against the frozen-Java `legacy-v1`.
 
 **Divergences from Java explicitly pinned in tests** (commonMain
