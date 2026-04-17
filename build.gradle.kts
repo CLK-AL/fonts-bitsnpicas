@@ -2,6 +2,10 @@ plugins {
     java
     alias(libs.plugins.kotlin.jvm)
     jacoco
+    // NOTE: The ProGuard Gradle plugin (com.guardsquare.proguard 7.7.0) is NOT available
+    // in the Gradle Plugin Portal. The artifact com.guardsquare.proguard:
+    // com.guardsquare.proguard.gradle.plugin:7.7.0 does not resolve.
+    // We use a manual JavaExec task with proguard-base instead — see proguardRelease below.
 }
 
 group = "com.kreative.bitsnpicas"
@@ -159,3 +163,111 @@ tasks.jacocoTestCoverageVerification {
 
 // Wire verification into check so CI fails when coverage regresses.
 tasks.named("check") { dependsOn(tasks.jacocoTestCoverageVerification) }
+
+// ---------------------------------------------------------------------------
+// ProGuard shrinking — produces a minimised legacy JAR.
+// ---------------------------------------------------------------------------
+// BLOCKER: ProGuard 7.7.0 (proguard-core 9.1.10) does not support Java 25
+// class files (version 69.0; max supported is 68.x = Java 24). GraalVM
+// 25.0.2 ships JDK 25, so the jmod library jars can't be read.
+// The ProGuard Gradle plugin (com.guardsquare.proguard) also does not
+// resolve from the Gradle Plugin Portal.
+//
+// The tasks below are fully wired but will fail at runtime until either:
+//   (a) ProGuard ships Java 25 support, or
+//   (b) a JDK 24 toolchain is installed and used for this task.
+// They are NOT wired into `check` to avoid blocking CI.
+// ---------------------------------------------------------------------------
+
+// Detached configuration so we can resolve the ProGuard CLI jar without
+// polluting compile/runtime classpaths.
+val proguardClasspath: Configuration by configurations.creating {
+    isCanBeResolved = true
+    isCanBeConsumed = false
+}
+
+dependencies {
+    proguardClasspath(libs.proguard.base)
+}
+
+val proguardRelease by tasks.registering(JavaExec::class) {
+    group = "build"
+    description = "Shrink the legacy JAR with ProGuard (BLOCKED: needs JDK <=24 or ProGuard update)"
+    dependsOn(tasks.jar)
+
+    val inputJar = tasks.jar.flatMap { it.archiveFile }
+    val shrunkJarName = tasks.jar.flatMap { it.archiveBaseName }.map { "$it-legacy-shrunk.jar" }
+    val outputJarFile = layout.buildDirectory.dir("libs").map { dir ->
+        File(dir.asFile, shrunkJarName.get())
+    }
+    val mappingFile = layout.buildDirectory.file("proguard/mapping.txt")
+
+    inputs.file(inputJar)
+    inputs.files(fileTree("proguard") { include("*.pro") })
+    outputs.file(outputJarFile)
+    outputs.file(mappingFile)
+
+    mainClass.set("proguard.ProGuard")
+    classpath = proguardClasspath
+
+    // Build the ProGuard arguments lazily
+    doFirst {
+        val libraryJars = configurations.named("runtimeClasspath").get().files
+
+        args(
+            "-injars", inputJar.get().asFile.absolutePath,
+            "-outjars", outputJarFile.get().absolutePath,
+            "-printmapping", mappingFile.get().asFile.absolutePath,
+            // JDK modules as library jars (Java 9+)
+            "-libraryjars", "<java.home>/jmods/java.base.jmod(!**.jar;!module-info.class)",
+            "-libraryjars", "<java.home>/jmods/java.desktop.jmod(!**.jar;!module-info.class)",
+            "-libraryjars", "<java.home>/jmods/java.datatransfer.jmod(!**.jar;!module-info.class)",
+            "-libraryjars", "<java.home>/jmods/java.xml.jmod(!**.jar;!module-info.class)",
+            "-libraryjars", "<java.home>/jmods/java.logging.jmod(!**.jar;!module-info.class)",
+            "-libraryjars", "<java.home>/jmods/java.prefs.jmod(!**.jar;!module-info.class)",
+        )
+
+        // Add runtime dependencies as library jars
+        libraryJars.forEach { jar ->
+            args("-libraryjars", jar.absolutePath)
+        }
+
+        // Apply rule files
+        args("-include", file("proguard/proguard-rules-common.pro").absolutePath)
+        args("-include", file("proguard/proguard-rules-java.pro").absolutePath)
+
+        // Ensure output directories exist
+        outputJarFile.get().parentFile.mkdirs()
+        mappingFile.get().asFile.parentFile.mkdirs()
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Verify the ProGuarded JAR — run the test suite against the shrunk JAR.
+// ---------------------------------------------------------------------------
+val verifyProguardedJar by tasks.registering(Test::class) {
+    group = "verification"
+    description = "Run the test suite against the ProGuard-shrunk JAR"
+    dependsOn(proguardRelease)
+
+    useJUnitPlatform()
+    testLogging {
+        events("passed", "failed", "skipped")
+        showStandardStreams = false
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+
+    // Use the same test classes as the main test task
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+
+    // Replace the normal runtime classpath: swap the project classes for the shrunk JAR
+    val shrunkJar = proguardRelease.map {
+        val name = tasks.jar.get().archiveBaseName.get() + "-legacy-shrunk.jar"
+        File(layout.buildDirectory.dir("libs").get().asFile, name)
+    }
+    classpath = files(shrunkJar) +
+        sourceSets.test.get().output.classesDirs +
+        configurations.named("testRuntimeClasspath").get()
+}
+// NOTE: proguardRelease and verifyProguardedJar are NOT wired into `check`
+// due to the JDK 25 / ProGuard 7.7.0 incompatibility documented above.

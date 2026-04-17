@@ -2,6 +2,8 @@
 kotlin = "2.3.20"
 junit = "5.12.2"
 kotest = "5.9.1"
+proguard = "7.7.0"
+graalvmPlugin = "0.10.6"
 
 [libraries]
 kotlin-test      = { module = "org.jetbrains.kotlin:kotlin-test",              version.ref = "kotlin" }
@@ -10,7 +12,12 @@ junit-jupiter    = { module = "org.junit.jupiter:junit-jupiter",               v
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 kotest-assertions = { module = "io.kotest:kotest-assertions-core",             version.ref = "kotest" }
 kotest-property  = { module = "io.kotest:kotest-property",                     version.ref = "kotest" }
+proguard-base    = { module = "com.guardsquare:proguard-base",                 version.ref = "proguard" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+# NOTE: ProGuard Gradle plugin (com.guardsquare.proguard) does not resolve from the
+# Gradle Plugin Portal — the root project uses a manual JavaExec task with proguard-base instead.
+# proguard = { id = "com.guardsquare.proguard", version.ref = "proguard" }
+graalvm-native = { id = "org.graalvm.buildtools.native", version.ref = "graalvmPlugin" }
