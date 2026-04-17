@@ -2,6 +2,8 @@ package com.kreative.bitsnpicas.core
 
 import com.kreative.bitsnpicas.BitmapFont as JavaBitmapFont
 import com.kreative.bitsnpicas.BitmapFontGlyph as JavaBitmapFontGlyph
+import com.kreative.bitsnpicas.Font as JavaFont
+import com.kreative.bitsnpicas.importer.BDFBitmapFontImporter
 import com.kreative.bitsnpicas.importer.FNTBitmapFontImporter
 import com.kreative.bitsnpicas.importer.PSFBitmapFontImporter
 
@@ -98,6 +100,39 @@ public object JavaLegacyAdapter {
             capHeight = jf.capHeight,
             lineGap = jf.lineGap,
             newGlyphWidth = jf.newGlyphWidth,
+        )
+    }
+
+    /**
+     * Import a BDF font via the frozen Java BDFBitmapFontImporter,
+     * then convert the result to commonMain types for parity testing.
+     * Takes the full BDF file as a single String (identical input as the
+     * commonMain `BdfImporter.read`).
+     */
+    public fun importBdfViaJava(text: String): BitmapFont {
+        val importer = BDFBitmapFontImporter()
+        val javaFonts: Array<JavaBitmapFont> = importer.importFont(
+            text.toByteArray(Charsets.UTF_8)
+        )
+        val jf = javaFonts[0]
+
+        val glyphs = mutableMapOf<Int, BitmapGlyph>()
+        for ((cp, jGlyph) in jf.characters(true)) {
+            val kg = fromJava(jGlyph) ?: continue
+            glyphs[cp] = kg
+        }
+
+        return BitmapFont(
+            glyphs = glyphs,
+            emAscent = jf.emAscent,
+            emDescent = jf.emDescent,
+            lineAscent = jf.lineAscent,
+            lineDescent = jf.lineDescent,
+            xHeight = jf.xHeight,
+            capHeight = jf.capHeight,
+            lineGap = jf.lineGap,
+            newGlyphWidth = jf.newGlyphWidth,
+            name = jf.getName(JavaFont.NAME_FAMILY),
         )
     }
 
