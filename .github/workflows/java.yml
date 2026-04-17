@@ -1,0 +1,17 @@
+name: java
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: sdkman/sdkman-action@main
+        with: { sdkmanrc: .sdkmanrc }
+      - name: Build + test (Java profile)
+        run: ./gradlew test jacocoTestReport jacocoTestCoverageVerification --console=plain
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with: { name: jacoco-${{ matrix.os }}, path: build/reports/jacoco/ }

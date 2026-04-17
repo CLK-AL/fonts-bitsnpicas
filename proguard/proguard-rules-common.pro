@@ -1,0 +1,5 @@
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
+-keep class kotlin.Metadata { *; }
+-keep class kotlinx.** { *; }
+-dontwarn kotlin.**
+-dontwarn kotlinx.**

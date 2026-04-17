@@ -1,0 +1,17 @@
+name: kmp
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: sdkman/sdkman-action@main
+        with: { sdkmanrc: .sdkmanrc }
+      - name: Build + test (KMP modules)
+        run: ./gradlew :modules:core:check --console=plain
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        with: { name: kmp-tests-${{ matrix.os }}, path: modules/core/build/reports/ }

@@ -1,0 +1,2 @@
+-keep class com.kreative.bitsnpicas.core.** { *; }
+-keep class org.jetbrains.skiko.** { *; }
