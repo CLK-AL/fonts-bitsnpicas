@@ -6,6 +6,7 @@ import com.kreative.bitsnpicas.Font as JavaFont
 import com.kreative.bitsnpicas.exporter.BDFBitmapFontExporter
 import com.kreative.bitsnpicas.importer.BDFBitmapFontImporter
 import com.kreative.bitsnpicas.importer.FNTBitmapFontImporter
+import com.kreative.bitsnpicas.importer.HexBitmapFontImporter
 import com.kreative.bitsnpicas.importer.PSFBitmapFontImporter
 
 /**
@@ -166,6 +167,51 @@ public object JavaLegacyAdapter {
         val exporter = BDFBitmapFontExporter()
         val bytes = exporter.exportFontToBytes(jf)
         return String(bytes, Charsets.UTF_8)
+    }
+
+    /**
+     * Import a Hex bitmap font via the frozen Java HexBitmapFontImporter,
+     * then convert the result to commonMain types for parity testing.
+     * Takes the full hex file as a single String.
+     */
+    public fun importHexViaJava(text: String): BitmapFont {
+        val importer = HexBitmapFontImporter()
+        val javaFonts: Array<JavaBitmapFont> = importer.importFont(
+            text.toByteArray(Charsets.UTF_8)
+        )
+        if (javaFonts.isEmpty()) {
+            // Java importer returns empty array for empty fonts
+            return BitmapFont(
+                glyphs = emptyMap(),
+                emAscent = 7,
+                emDescent = 1,
+                lineAscent = 7,
+                lineDescent = 1,
+                xHeight = 5,
+                capHeight = 7,
+                lineGap = 0,
+                newGlyphWidth = 8,
+            )
+        }
+        val jf = javaFonts[0]
+
+        val glyphs = mutableMapOf<Int, BitmapGlyph>()
+        for ((cp, jGlyph) in jf.characters(true)) {
+            val kg = fromJava(jGlyph) ?: continue
+            glyphs[cp] = kg
+        }
+
+        return BitmapFont(
+            glyphs = glyphs,
+            emAscent = jf.emAscent,
+            emDescent = jf.emDescent,
+            lineAscent = jf.lineAscent,
+            lineDescent = jf.lineDescent,
+            xHeight = jf.xHeight,
+            capHeight = jf.capHeight,
+            lineGap = jf.lineGap,
+            newGlyphWidth = jf.newGlyphWidth,
+        )
     }
 
     /** Compose via the frozen Java code path, returning a commonMain view. */
