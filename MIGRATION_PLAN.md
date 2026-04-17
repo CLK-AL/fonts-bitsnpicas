@@ -168,17 +168,38 @@ Commit: `9797e8a`.
 
 **Remaining follow-ups:**
 
-- **TTF importer** — the `truetype/**` package is large (~90 table
-  classes); the full port is a multi-sprint effort. The frozen Java
-  `TrueTypeFile.decompile/compile` logic is the foundation for the
-  `Glyph.vectorize` API (INTEGRATION.md §7.5). Recommend deferring
-  to a dedicated S4-TTF sprint after the Compose UI work unblocks
-  the visual pipeline.
-- **PUAA importer/exporter** — medium-size codec registry; the
-  round-trip pattern is proven and the coverage tests (S2b) already
-  exist. Can be ported opportunistically.
-- **Playdate PNG integration** — needs a `PngDecoder` expect/actual;
-  deferred to S5 when Skiko provides the image-decode surface.
+- **TTF remaining ~70 tables** — CBDT, COLR, CPAL, SVG, kern,
+  GPOS, GSUB, etc. Each is an independent port; `UnknownTable`
+  fallback preserves them losslessly in the meantime. The 10
+  essential tables (head/name/post/cmap/OS2/hhea/hmtx/maxp/loca/glyf)
+  are ported — a functional TTF round-trips through commonMain.
+- **PUAA remaining ~15 text codecs** — 4 done (UnicodeData, Blocks,
+  PropList, Scripts); rest are the same pattern.
+- **ProGuard `verifyProguardedJar`** — ✅ fixed; 205 tests pass
+  against the shrunk JAR. Not wired into `check` by design.
+- **Playdate sprite-sheet** — ✅ ported; `PlaydateImporter` takes
+  ARGB pixel matrix + metadata → `BitmapFont`. JVM helper decodes
+  PNG via `ImageIO`.
+
+### TTF table port progress
+
+| Table | Tag | Status | Tests |
+| --- | --- | --- | --- |
+| head | `head` | ✅ | 3 |
+| name | `name` | ✅ | 5 |
+| post | `post` | ✅ | 6 |
+| cmap | `cmap` | ✅ (formats 0/4/6/10/12) | 6 |
+| OS/2 | `OS/2` | ✅ (versions 0-5) | 5 |
+| hhea | `hhea` | ✅ | 3 |
+| hmtx | `hmtx` | ✅ | 4 |
+| maxp | `maxp` | ✅ (v0.5 + v1.0) | 4 |
+| loca | `loca` | ✅ (short + long) | 3 |
+| glyf | `glyf` | ✅ (simple + compound) | 5 |
+| PUAA | `PUAA` | ✅ (binary + 4 text codecs) | 48 |
+| *~70 others* | — | `UnknownTable` fallback | — |
+
+**287 module tests.** A functional TTF round-trips through
+commonMain with cross-compile parity against the frozen Java.
 
 **Next milestone**: Stage S5 (Compose Desktop `UiDriver` actual).
 
