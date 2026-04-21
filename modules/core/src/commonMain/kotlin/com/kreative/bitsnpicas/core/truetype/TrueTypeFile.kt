@@ -42,6 +42,14 @@ public class TrueTypeFile {
             TAG_MAXP -> MaxpTable()
             TAG_LOCA -> LocaTable()
             TAG_GLYF -> GlyfTable()
+            TAG_COLR -> ColrTable()
+            TAG_CPAL -> CpalTable()
+            TAG_SVG  -> SvgTable()
+            TAG_CBLC -> CblcTable()
+            TAG_CBDT -> CbdtTable()
+            TAG_KERN -> KernTable()
+            TAG_GPOS -> GposTable()
+            TAG_GSUB -> GsubTable()
             else -> UnknownTable(tableId)
         }
     }
@@ -242,6 +250,14 @@ public class TrueTypeFile {
         internal const val TAG_MAXP: Int = 0x6D617870 // "maxp"
         internal const val TAG_LOCA: Int = 0x6C6F6361 // "loca"
         internal const val TAG_GLYF: Int = 0x676C7966 // "glyf"
+        internal const val TAG_COLR: Int = 0x434F4C52 // "COLR"
+        internal const val TAG_CPAL: Int = 0x4350414C // "CPAL"
+        internal const val TAG_SVG:  Int = 0x53564720 // "SVG "
+        internal const val TAG_CBLC: Int = 0x43424C43 // "CBLC"
+        internal const val TAG_CBDT: Int = 0x43424454 // "CBDT"
+        internal const val TAG_KERN: Int = 0x6B65726E // "kern"
+        internal const val TAG_GPOS: Int = 0x47504F53 // "GPOS"
+        internal const val TAG_GSUB: Int = 0x47535542 // "GSUB"
 
         private fun chksum(data: ByteArray): Int {
             var sum = 0

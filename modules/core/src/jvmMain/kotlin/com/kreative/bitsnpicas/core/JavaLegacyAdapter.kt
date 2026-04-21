@@ -32,6 +32,10 @@ import com.kreative.bitsnpicas.truetype.MaxpTable as JavaMaxpTable
 import com.kreative.bitsnpicas.truetype.LocaTable as JavaLocaTable
 import com.kreative.bitsnpicas.truetype.GlyfTable as JavaGlyfTable
 import com.kreative.bitsnpicas.truetype.CmapTable as JavaCmapTable
+import com.kreative.bitsnpicas.truetype.ColrTable as JavaColrTable
+import com.kreative.bitsnpicas.truetype.CpalTable as JavaCpalTable
+import com.kreative.bitsnpicas.truetype.SvgTable as JavaSvgTable
+import com.kreative.bitsnpicas.truetype.SvgTableEntry as JavaSvgTableEntry
 import com.kreative.bitsnpicas.core.truetype.TrueTypeFile as KTrueTypeFile
 import com.kreative.bitsnpicas.core.truetype.HeadTable as KHeadTable
 import com.kreative.bitsnpicas.core.truetype.NameTable as KNameTable
@@ -47,6 +51,15 @@ import com.kreative.bitsnpicas.core.truetype.MaxpTable as KMaxpTable
 import com.kreative.bitsnpicas.core.truetype.LocaTable as KLocaTable
 import com.kreative.bitsnpicas.core.truetype.GlyfTable as KGlyfTable
 import com.kreative.bitsnpicas.core.truetype.CmapTable as KCmapTable
+import com.kreative.bitsnpicas.core.truetype.ColrTable as KColrTable
+import com.kreative.bitsnpicas.core.truetype.CpalTable as KCpalTable
+import com.kreative.bitsnpicas.core.truetype.SvgTable as KSvgTable
+import com.kreative.bitsnpicas.core.truetype.SvgTableEntry as KSvgTableEntry
+import com.kreative.bitsnpicas.core.truetype.CblcTable as KCblcTable
+import com.kreative.bitsnpicas.core.truetype.CbdtTable as KCbdtTable
+import com.kreative.bitsnpicas.core.truetype.KernTable as KKernTable
+import com.kreative.bitsnpicas.core.truetype.GposTable as KGposTable
+import com.kreative.bitsnpicas.core.truetype.GsubTable as KGsubTable
 
 /**
  * JVM-only adapters that bridge the frozen Java `BitmapFontGlyph`
@@ -658,6 +671,54 @@ public object JavaLegacyAdapter {
                 val rawData = table.compile()
                 com.kreative.bitsnpicas.truetype.UnknownTable("cmap", rawData)
             }
+            is KColrTable -> {
+                val jt = JavaColrTable()
+                jt.version = table.version
+                jt.baseGlyphRecords = Array(table.baseGlyphRecords.size) { i ->
+                    val src = table.baseGlyphRecords[i]
+                    JavaColrTable.BaseGlyph().also {
+                        it.glyphID = src.glyphID
+                        it.firstLayerIndex = src.firstLayerIndex
+                        it.numLayers = src.numLayers
+                    }
+                }
+                jt.layerRecords = Array(table.layerRecords.size) { i ->
+                    val src = table.layerRecords[i]
+                    JavaColrTable.Layer().also {
+                        it.glyphID = src.glyphID
+                        it.paletteIndex = src.paletteIndex
+                    }
+                }
+                jt
+            }
+            is KCpalTable -> {
+                val jt = JavaCpalTable()
+                jt.version = table.version
+                jt.numPaletteEntries = table.numPaletteEntries
+                jt.colorRecordIndices = table.colorRecordIndices.copyOf()
+                jt.colorRecordsArray = table.colorRecordsArray.copyOf()
+                jt.paletteTypesArray = table.paletteTypesArray?.copyOf()
+                jt.paletteLabelsArray = table.paletteLabelsArray?.copyOf()
+                jt.paletteEntryLabelsArray = table.paletteEntryLabelsArray?.copyOf()
+                jt
+            }
+            is KSvgTable -> {
+                val jt = JavaSvgTable()
+                for (e in table.entries) {
+                    val je = JavaSvgTableEntry()
+                    je.startGlyphID = e.startGlyphID
+                    je.endGlyphID = e.endGlyphID
+                    je.svgDocument = e.svgDocument.copyOf()
+                    jt.add(je)
+                }
+                jt
+            }
+            is KCblcTable, is KCbdtTable, is KKernTable, is KGposTable, is KGsubTable -> {
+                // These tables have no Java equivalent or use raw-data round-trip;
+                // compile via Kotlin and wrap as UnknownTable for Java
+                val rawData = table.compile()
+                com.kreative.bitsnpicas.truetype.UnknownTable(table.tableName, rawData)
+            }
             is KUnknownTable -> {
                 val jt = com.kreative.bitsnpicas.truetype.UnknownTable(table.tableName, table.data.copyOf())
                 jt
@@ -852,6 +913,46 @@ public object JavaLegacyAdapter {
                 val rawData = jt.compile(emptyArray<JavaTrueTypeTable>())
                 val t = KCmapTable()
                 t.decompile(rawData)
+                t
+            }
+            is JavaColrTable -> {
+                val t = KColrTable()
+                t.version = jt.version
+                jt.baseGlyphRecords?.forEach { src ->
+                    t.baseGlyphRecords.add(KColrTable.BaseGlyph().also {
+                        it.glyphID = src.glyphID
+                        it.firstLayerIndex = src.firstLayerIndex
+                        it.numLayers = src.numLayers
+                    })
+                }
+                jt.layerRecords?.forEach { src ->
+                    t.layerRecords.add(KColrTable.Layer().also {
+                        it.glyphID = src.glyphID
+                        it.paletteIndex = src.paletteIndex
+                    })
+                }
+                t
+            }
+            is JavaCpalTable -> {
+                val t = KCpalTable()
+                t.version = jt.version
+                t.numPaletteEntries = jt.numPaletteEntries
+                t.colorRecordIndices = jt.colorRecordIndices?.copyOf() ?: IntArray(0)
+                t.colorRecordsArray = jt.colorRecordsArray?.copyOf() ?: IntArray(0)
+                t.paletteTypesArray = jt.paletteTypesArray?.copyOf()
+                t.paletteLabelsArray = jt.paletteLabelsArray?.copyOf()
+                t.paletteEntryLabelsArray = jt.paletteEntryLabelsArray?.copyOf()
+                t
+            }
+            is JavaSvgTable -> {
+                val t = KSvgTable()
+                for (je in jt) {
+                    val e = KSvgTableEntry()
+                    e.startGlyphID = je.startGlyphID
+                    e.endGlyphID = je.endGlyphID
+                    e.svgDocument = je.svgDocument?.copyOf() ?: ByteArray(0)
+                    t.entries.add(e)
+                }
                 t
             }
             else -> {

@@ -4,19 +4,52 @@ package com.kreative.bitsnpicas.core.puaa
  * Registry that maps filename patterns to [PuaaCodec] instances.
  *
  * Ported from the frozen Java `com.kreative.bitsnpicas.puaa.PuaaCodecRegistry`.
- *
- * Only the most common codecs are registered here as a proof of concept;
- * exotic ones (Unihan, NameAliases, SpecialCasing, etc.) can be added later.
  */
 public class PuaaCodecRegistry private constructor() {
 
     private val codecs = sortedMapOf<String, PuaaCodec>()
 
     init {
+        // Previously ported codecs
         addCodec(BlocksCodec())
         addCodec(PropListCodec())
         addCodec(ScriptsCodec())
         addCodec(UnicodeDataCodec())
+        // AbstractStringCodec derivatives
+        addCodec(EastAsianWidthCodec())
+        addCodec(LineBreakCodec())
+        addCodec(VerticalOrientationCodec())
+        // AbstractCategoryCodec derivatives
+        addCodec(GraphemeBreakPropertyCodec())
+        addCodec(SentenceBreakPropertyCodec())
+        addCodec(WordBreakPropertyCodec())
+        addCodec(IndicPositionalCategoryCodec())
+        addCodec(IndicSyllabicCategoryCodec())
+        // AbstractPropListCodec derivatives
+        addCodec(EmojiDataCodec())
+        // Standalone codecs
+        addCodec(ArabicShapingCodec())
+        addCodec(BidiBracketsCodec())
+        addCodec(BidiMirroringCodec())
+        addCodec(CompositionExclusionsCodec())
+        addCodec(DerivedAgeCodec())
+        addCodec(EquivalentUnifiedIdeographCodec())
+        addCodec(HangulSyllableTypeCodec())
+        addCodec(JamoCodec())
+        addCodec(NameAliasesCodec())
+        addCodec(ScriptExtensionsCodec())
+        addCodec(SpecialCasingCodec())
+        // AbstractUnihanCodec derivatives
+        addCodec(NushuSourcesCodec())
+        addCodec(TangutSourcesCodec())
+        addCodec(UnihanDictionaryIndicesCodec())
+        addCodec(UnihanDictionaryLikeDataCodec())
+        addCodec(UnihanIRGSourcesCodec())
+        addCodec(UnihanNumericValuesCodec())
+        addCodec(UnihanOtherMappingsCodec())
+        addCodec(UnihanRadicalStrokeCountsCodec())
+        addCodec(UnihanReadingsCodec())
+        addCodec(UnihanVariantsCodec())
     }
 
     public fun addCodec(codec: PuaaCodec) {
