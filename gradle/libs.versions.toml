@@ -2,6 +2,7 @@
 kotlin = "2.3.20"
 junit = "5.12.2"
 kotest = "5.9.1"
+fontbox = "3.0.5"
 proguard = "7.9.0"
 graalvmPlugin = "0.10.6"
 
@@ -12,6 +13,7 @@ junit-jupiter    = { module = "org.junit.jupiter:junit-jupiter",               v
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 kotest-assertions = { module = "io.kotest:kotest-assertions-core",             version.ref = "kotest" }
 kotest-property  = { module = "io.kotest:kotest-property",                     version.ref = "kotest" }
+fontbox          = { module = "org.apache.pdfbox:fontbox",                     version.ref = "fontbox" }
 proguard-base    = { module = "com.guardsquare:proguard-base",                 version.ref = "proguard" }
 
 [plugins]

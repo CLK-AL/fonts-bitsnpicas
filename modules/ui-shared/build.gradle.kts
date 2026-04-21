@@ -26,6 +26,12 @@ kotlin {
                 implementation(libs.kotlin.test)
             }
         }
+        val jvmMain by getting {
+            dependencies {
+                // Apache FontBox for TTF outline rendering (JVM only).
+                implementation(libs.fontbox)
+            }
+        }
         val jvmTest by getting {
             dependencies {
                 implementation(libs.kotlin.test.junit5)
